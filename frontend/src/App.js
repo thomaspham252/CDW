@@ -2,7 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/home/HomePage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import './App.css';
 
 function App() {
@@ -12,7 +15,19 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              {/* Trang chủ sử dụng MainLayout (Header + Footer) */}
+              <Route 
+                path="/" 
+                element={
+                  <MainLayout>
+                    <HomePage />
+                  </MainLayout>
+                } 
+              />
+              
+              {/* Trang Login/Register có thể không cần Header/Footer của trang chính */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
             </Routes>
           </div>
         </Router>

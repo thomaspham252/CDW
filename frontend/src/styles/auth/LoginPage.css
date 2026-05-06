@@ -1,0 +1,136 @@
+.login-page, .register-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #C07A4D 0%, #A06030 100%);
+    font-family: 'Inter', sans-serif;
+}
+
+#container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+.login, .register {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.content h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-container input[type="text"],
+.form-container input[type="email"],
+.form-container input[type="password"] {
+    padding: 12px 15px;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-container input:focus {
+    outline: none;
+    border-color: #C07A4D;
+}
+
+.form-container button {
+    padding: 14px;
+    background: #C07A4D;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+.form-container button:hover {
+    background: #A06030;
+}
+
+.loginwith {
+    display: block;
+    text-align: center;
+    margin: 20px 0;
+    color: #888;
+    position: relative;
+}
+
+.loginwith::before, .loginwith::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background: #eee;
+}
+
+.loginwith::before { left: 0; }
+.loginwith::after { right: 0; }
+
+.social {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.social a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    border: 1px solid #eee;
+    border-radius: 50%;
+    color: #555;
+    transition: all 0.3s;
+}
+
+.social a:hover {
+    background: #f8f9fa;
+    border-color: #C07A4D;
+    color: #C07A4D;
+}
+
+.switch {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+}
+
+.switch a {
+    color: #C07A4D;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.remember input {
+    cursor: pointer;
+}

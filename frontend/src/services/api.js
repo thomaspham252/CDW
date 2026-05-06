@@ -1,10 +1,15 @@
+// Mock API services
+export const productsAPI = {
+    getAll: () => Promise.resolve([]),
+    getById: (id) => Promise.resolve({ id, name: 'Product ' + id })
+};
+
 export const favoritesAPI = {
-    getAll: async (userId) => [],
-    isFavorite: async (productId, userId) => false,
-    addToFavorites: async (productId, userId) => {},
-    removeFromFavorites: async (productId, userId) => {}
+    // Mock count
+    getCount: (userId) => 3, 
+    toggle: (userId, productId) => Promise.resolve(true)
 };
 
 export const notificationsAPI = {
-    create: async (userId, type, message) => {}
+    getUnreadCount: (userId) => Promise.resolve(5)
 };

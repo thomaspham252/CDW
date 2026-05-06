@@ -36,6 +36,7 @@ import {
     faGift,
     faHeadset,
     faAddressBook,
+    faNewspaper,
 
     // 🔹 ICON MỚI
     faBell,          // Thông báo
@@ -117,6 +118,7 @@ export const icons = {
     paperPlane: faPaperPlane,
     globe: faGlobe,
     trophy: faTrophy,
+    blog: faNewspaper,
 
     // Social
     facebook: faFacebookBrand,
