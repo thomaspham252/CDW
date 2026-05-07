@@ -6,10 +6,12 @@ import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/home/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css';
 
 function App() {
   return (
+      <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
     <AuthProvider>
       <CartProvider>
         <Router>
@@ -33,6 +35,7 @@ function App() {
         </Router>
       </CartProvider>
     </AuthProvider>
+      </GoogleOAuthProvider>
   );
 }
 
