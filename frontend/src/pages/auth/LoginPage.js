@@ -1,17 +1,30 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useLogin } from '../../hooks/useLogin';
+import { useState } from "react";
+import { useNavigate, Link } from 'react-router-dom';
+import {useAuth} from "../../context/AuthContext";
+
 import '../../styles/auth/LoginPage.css';
 
 const LoginPage = () => {
-    const {
-        email, setEmail,
-        password, setPassword,
-        error,
-        loading,
-        handleSubmit
-    } = useLogin();
+    const {login} =useAuth();
+    const navigate = useNavigate();
+    const [error,setError]=useState("");
+    const [loading,setLoading]=useState(false);
+    const handleSubmit =async (e)=>{
+        e.preventDefault();
+        setLoading(true);
+        setError("");
+        const email =e.target.email.value;
+        const password = e.target.password.value;
 
+        try{
+            await login(email,password);
+            navigate("/");
+        }catch (err){
+            setError(err.response?.data?.message||"Sai email hoặc mật khẩu");
+        }finally {
+            setLoading(false);
+        }
+};
     return (
         <div className="login-page">
             <div id="container">
@@ -22,17 +35,15 @@ const LoginPage = () => {
                         <form className="form-container" onSubmit={handleSubmit}>
                             <input
                                 type="email"
+                                name="email"
                                 placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
 
                             <input
+                                name="password"
                                 type="password"
                                 placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
 
@@ -43,7 +54,7 @@ const LoginPage = () => {
                             )}
 
                             <button type="submit" disabled={loading}>
-                                {loading ? 'Đang đăng nhập...' : 'Log In'}
+                                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
                             </button>
                         </form>
 
