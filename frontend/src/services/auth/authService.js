@@ -11,7 +11,7 @@ export const login = async (email,password)=>{
     return res.data;
 };
 
-export const loginGoodle= async (idToken)=>{
+export const loginGoogle= async (idToken)=>{
     const res = await api.post("/auth/google",{idToken});
     localStorage.setItem("token" , res.data.token);
     return res.data;
