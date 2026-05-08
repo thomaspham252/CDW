@@ -8,6 +8,8 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css';
+import ProductsPage from "./pages/products/ProductsPage";
+import ProductDetailPage from "./pages/products/ProductDetailPage";
 
 function App() {
   return (
@@ -17,19 +19,13 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
-              {/* Trang chủ sử dụng MainLayout (Header + Footer) */}
-              <Route 
-                path="/" 
-                element={
-                  <MainLayout>
-                    <HomePage />
-                  </MainLayout>
-                } 
-              />
-              
-              {/* Trang Login/Register có thể không cần Header/Footer của trang chính */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/products/:id" element={<ProductDetailPage />} />
+              </Route>
             </Routes>
           </div>
         </Router>
