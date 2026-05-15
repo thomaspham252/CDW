@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
                 .body(buildResponse(ex.getStatus().value(), ex.getMessage(), request.getRequestURI()));
     }
 
-    // BadRequest
+    // 400 – dữ liệu không hợp lệ, slug trùng, vi phạm business rule
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(
             BadRequestException ex,
@@ -31,24 +31,35 @@ public class GlobalExceptionHandler {
                 .body(buildResponse(400, ex.getMessage(), request.getRequestURI()));
     }
 
-    // Validate @Valid
+    // 404 – resource (product / variant / image) không tồn tại
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            NotFoundException ex,
+            HttpServletRequest request) {
+
+        return ResponseEntity.status(404)
+                .body(buildResponse(404, ex.getMessage(), request.getRequestURI()));
+    }
+
+    // 400 – lỗi Bean Validation (@Valid trên DTO)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
+        // Trả về lỗi đầu tiên tìm được (field: message)
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .findFirst()
-                .map(err -> err.getField() + " " + err.getDefaultMessage())
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .orElse("Dữ liệu không hợp lệ");
 
         return ResponseEntity.badRequest()
                 .body(buildResponse(400, message, request.getRequestURI()));
     }
 
-    // Catch all
+    // 500 – lỗi không mong muốn
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(
             Exception ex,
@@ -74,7 +85,7 @@ public class GlobalExceptionHandler {
             case 401 -> "Unauthorized";
             case 403 -> "Forbidden";
             case 404 -> "Not Found";
-            default -> "Internal Server Error";
+            default  -> "Internal Server Error";
         };
     }
 }
