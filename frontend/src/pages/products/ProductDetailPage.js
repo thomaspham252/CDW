@@ -4,6 +4,10 @@ import { useProductDetailPage } from "../../hooks/useProductDetailPage";
 import { formatPrice } from "../../utils/formatPrice";
 import { getPriceByType } from "../../utils/productPrice";
 import { FontAwesomeIcon, icons } from "../../utils/icons";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
 import "../../styles/products/ProductDetailPage.css";
 
 const ProductDetailPage = () => {
@@ -113,7 +117,7 @@ const ProductDetailPage = () => {
                   alt={product.name}
                   onError={(e) => {
                     e.target.src =
-                      "https://via.placeholder.com/400x400?text=No+Image";
+                      "https://placehold.co/400x400?text=No+Image";
                   }}
                 />
               ) : (
@@ -380,28 +384,55 @@ const ProductDetailPage = () => {
           </button>
         </div>
         {relatedLoading ? (
-          <div className="loading">Đang tải sản phẩm liên quan...</div>
+          <div className="related-loading">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="related-skeleton">
+                <div className="skel-img" />
+                <div className="skel-line w70" />
+                <div className="skel-line w40" />
+              </div>
+            ))}
+          </div>
         ) : relatedProducts.length === 0 ? (
           <div className="empty-related">Chưa có sản phẩm liên quan.</div>
         ) : (
-          <div className="related-grid">
+          <Swiper
+            spaceBetween={16}
+            slidesPerView={4}
+            navigation
+            modules={[Navigation]}
+            breakpoints={{
+              0:    { slidesPerView: 1 },
+              480:  { slidesPerView: 2 },
+              768:  { slidesPerView: 3 },
+              1024: { slidesPerView: 4 },
+            }}
+            className="related-swiper"
+          >
             {relatedProducts.map((item) => (
-              <button
-                key={item.id}
-                className="related-card"
-                type="button"
-                onClick={() => navigate(`/products/${item.slug || item.id}`)}
-              >
-                <div className="related-image">
-                  <img src={item.image} alt={item.name} />
-                </div>
-                <div className="related-info">
-                  <div className="related-name">{item.name}</div>
-                  <div className="related-price">{formatPrice(item.price)}</div>
-                </div>
-              </button>
+              <SwiperSlide key={item.id}>
+                <button
+                  className="related-card"
+                  type="button"
+                  onClick={() => navigate(`/products/${item.slug || item.id}`)}
+                >
+                  <div className="related-image">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      onError={e => e.target.src = 'https://placehold.co/300x300?text=No+Image'}
+                    />
+                    <div className="related-overlay">Xem chi tiết</div>
+                  </div>
+                  <div className="related-info">
+                    <span className="related-cat">{item.category}</span>
+                    <div className="related-name">{item.name}</div>
+                    <div className="related-price">{formatPrice(item.price)}</div>
+                  </div>
+                </button>
+              </SwiperSlide>
             ))}
-          </div>
+          </Swiper>
         )}
       </section>
 
