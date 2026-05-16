@@ -1,39 +1,42 @@
 import { useState } from "react";
 import { useNavigate, Link } from 'react-router-dom';
-import {useAuth} from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { GoogleLogin } from '@react-oauth/google';
-import { loginGoogle } from '../../services/auth/authService';
 import '../../styles/auth/LoginPage.css';
 
 const LoginPage = () => {
-    const {login} =useAuth();
+    const { login, loginGoogle } = useAuth();
     const navigate = useNavigate();
-    const [error,setError]=useState("");
-    const [loading,setLoading]=useState(false);
-    const handleSubmit =async (e)=>{
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    // Đăng nhập bằng email/password
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        const email =e.target.email.value;
+        const email = e.target.email.value;
         const password = e.target.password.value;
-
-        try{
-            await login(email,password);
+        try {
+            await login(email, password);
             navigate("/");
-        }catch (err){
-            setError(err.response?.data?.message||"Sai email hoặc mật khẩu");
-        }finally {
+        } catch (err) {
+            setError(err.response?.data?.message || "Sai email hoặc mật khẩu");
+        } finally {
             setLoading(false);
         }
-};
+    };
+
+    // Đăng nhập bằng Google
     const handleGoogleSuccess = async (credential) => {
         try {
             await loginGoogle(credential.credential);
             navigate("/");
         } catch (err) {
-            setError("Đăng nhập Google thất bại");
+            setError(err.response?.data?.message || "Đăng nhập Google thất bại");
         }
     };
+
     return (
         <div className="login-page">
             <div id="container">
@@ -48,20 +51,15 @@ const LoginPage = () => {
                                 placeholder="Email"
                                 required
                             />
-
                             <input
                                 name="password"
                                 type="password"
                                 placeholder="Password"
                                 required
                             />
-
                             {error && (
-                                <p style={{ color: 'red', marginTop: '8px' }}>
-                                    {error}
-                                </p>
+                                <p style={{ color: 'red', marginTop: '8px' }}>{error}</p>
                             )}
-
                             <button type="submit" disabled={loading}>
                                 {loading ? "Đang đăng nhập..." : "Đăng nhập"}
                             </button>

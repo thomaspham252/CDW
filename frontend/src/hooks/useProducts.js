@@ -20,7 +20,7 @@ export const useProducts = () => {
           name: p.name,
           slug: p.slug,
           image:
-            p.mainUrl || "https://via.placeholder.com/300x300?text=No+Image",
+            p.mainUrl || "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
           originalPrice: p.basePrice ? parseFloat(p.basePrice) : null,
           category: p.categoryName || "Chưa phân loại",

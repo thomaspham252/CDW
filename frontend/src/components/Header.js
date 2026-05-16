@@ -97,7 +97,7 @@ const Header = () => {
                     {isAuthenticated ? (
                         <div className="user-menu">
                             <Link to="/profile" className="nav-link user-name">
-                                <FontAwesomeIcon icon={icons.user} /> {user?.name || user?.email}
+                                <FontAwesomeIcon icon={icons.user} /> {user?.fullName || user?.email || 'Tài khoản'}
                             </Link>
                             <button onClick={handleLogout} className="btn-logout">
                                 <FontAwesomeIcon icon={icons.logout} />

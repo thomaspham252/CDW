@@ -58,7 +58,7 @@ export const useProductsPage = () => {
           name: p.name,
           slug: p.slug,
           image:
-            p.mainUrl || "https://via.placeholder.com/300x300?text=No+Image",
+            p.mainUrl || "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
           category: p.categoryName || "Chưa phân loại",
           rating: 5, // Backend chưa có rating
@@ -188,14 +188,26 @@ export const useProductsPage = () => {
 
   const handleAddToCart = async (productId) => {
     try {
-      await addToCart(productId, 1);
+      // Tìm product trong danh sách để lấy đầy đủ thông tin
+      const product = products.find((p) => p.id === productId);
+      if (!product) return;
+
+      addToCart({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        image: product.image,
+        price: product.price,
+        size: null, // Trang danh sách không chọn size
+      }, 1);
+
       if (user)
         await notificationsAPI.create(
           user.id,
           "order",
           "Đã thêm sản phẩm vào giỏ hàng",
         );
-      addToast("Đã thêm sản phẩm vào giỏ hàng", "success");
+      addToast(`Đã thêm "${product.name}" vào giỏ hàng`, "success");
     } catch (err) {
       console.error(err);
       addToast("Lỗi khi thêm vào giỏ hàng", "error");
