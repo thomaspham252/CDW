@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -22,6 +23,9 @@ import java.util.Collections;
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+
+    @Value("${admin.email}")
+    private String adminEmail;
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -62,6 +66,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 // 5. Set context
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+
+        // 6. Kiểm tra quyền truy cập Admin cho các endpoint /api/admin/**
+        String path = request.getRequestURI();
+        if (path.startsWith("/api/admin/")) {
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof User) {
+                User principal = (User) auth.getPrincipal();
+                if (principal.getEmail() == null || !principal.getEmail().equalsIgnoreCase(adminEmail)) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"message\": \"Access denied. Only the administrator is allowed.\"}");
+                    return;
+                }
             }
         }
 

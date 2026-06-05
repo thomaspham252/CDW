@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -145,6 +146,14 @@ public class ProductServiceImpl implements ProductService {
     public Page<ProductSummaryResponse> listAdmin(Pageable pageable) {
         return productRepo.findAll(pageable)
                 .map(mapper::toSummary);
+    }
+
+    /**
+     * Lấy danh sách toàn bộ danh mục sản phẩm.
+     */
+    @Override
+    public List<Category> listCategories() {
+        return categoryRepo.findAll();
     }
 
     // =========================================================================

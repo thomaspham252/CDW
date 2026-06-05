@@ -96,6 +96,11 @@ const Header = () => {
 
                     {isAuthenticated ? (
                         <div className="user-menu">
+                            {user?.email?.toLowerCase() === '22130143@st.hcmuaf.edu.vn' && (
+                                <Link to="/admin" className="nav-link">
+                                    Quản trị
+                                </Link>
+                            )}
                             <Link to="/profile" className="nav-link user-name">
                                 <FontAwesomeIcon icon={icons.user} /> {user?.fullName || user?.email || 'Tài khoản'}
                             </Link>
@@ -148,6 +153,11 @@ const Header = () => {
                 </Link>
                 {isAuthenticated ? (
                     <>
+                        {user?.email?.toLowerCase() === '22130143@st.hcmuaf.edu.vn' && (
+                            <Link to="/admin" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
+                                <FontAwesomeIcon icon={icons.shield} /> Quản trị
+                            </Link>
+                        )}
                         <Link to="/profile" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
                             <FontAwesomeIcon icon={icons.user} /> Hồ Sơ
                         </Link>

@@ -12,6 +12,7 @@ import ProductsPage from "./pages/products/ProductsPage";
 import ProductDetailPage from "./pages/products/ProductDetailPage";
 import CartPage from "./pages/cart/CartPage";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
                   <Route path="/products/:slug" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
                 </Route>
               </Routes>
             </div>
