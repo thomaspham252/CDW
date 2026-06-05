@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import com.project.backend.entity.product.Category;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
@@ -48,6 +50,15 @@ public class ProductController {
     @GetMapping("/api/products/{slug}")
     public ResponseEntity<ProductDetailResponse> getBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(productService.getBySlug(slug));
+    }
+
+    /**
+     * GET /api/products/categories
+     * Danh sách toàn bộ danh mục sản phẩm.
+     */
+    @GetMapping("/api/products/categories")
+    public ResponseEntity<List<Category>> listCategories() {
+        return ResponseEntity.ok(productService.listCategories());
     }
 
     // =========================================================================

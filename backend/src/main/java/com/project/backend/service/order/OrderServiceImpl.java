@@ -12,6 +12,9 @@ import com.project.backend.entity.product.ProductVariant;
 import com.project.backend.repository.order.OrderItemRepository;
 import com.project.backend.repository.order.OrderRepository;
 import com.project.backend.repository.product.ProductVariantRepository;
+import com.project.backend.repository.product.ProductRepository;
+import com.project.backend.repository.auth.UserRepository;
+import com.project.backend.dto.response.analytics.AnalyticsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -147,5 +152,44 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse updateOrderStatus(Integer id, String status) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with id: " + id));
+        order.setStatus(status);
+        Order updatedOrder = orderRepository.save(order);
+        return mapToOrderResponse(updatedOrder);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AnalyticsResponse getAnalytics() {
+        List<Order> orders = orderRepository.findAll();
+        BigDecimal totalRevenue = orders.stream()
+                .filter(o -> !"cancelled".equalsIgnoreCase(o.getStatus()))
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long totalOrders = orders.size();
+        long totalProducts = productRepository.count();
+        long totalCustomers = userRepository.count();
+
+        return AnalyticsResponse.builder()
+                .totalRevenue(totalRevenue)
+                .totalOrders(totalOrders)
+                .totalProducts(totalProducts)
+                .totalCustomers(totalCustomers)
+                .build();
     }
 }
