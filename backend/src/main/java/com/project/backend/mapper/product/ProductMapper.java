@@ -134,6 +134,7 @@ public class ProductMapper {
         response.setPrice(variant.getPrice());
         response.setBasePrice(variant.getBasePrice());
         response.setSize(variant.getSize());
+        response.setColor(variant.getColor());
 
         // Map tất cả images
         if (variant.getImages() != null) {
@@ -172,6 +173,7 @@ public class ProductMapper {
                 .price(BigDecimal.valueOf(req.getPrice()))           // chuyển double → BigDecimal
                 .basePrice(BigDecimal.valueOf(req.getBasePrice()))   // giá gốc (trước khuyến mãi)
                 .size(req.getSize())
+                .color(req.getColor())
                 // product sẽ được set ở Service: variant.setProduct(savedProduct)
                 .build();
     }

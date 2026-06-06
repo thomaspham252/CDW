@@ -33,7 +33,10 @@ export const useHomePage = () => {
           name: p.name,
           slug: p.slug,
           image:
-            p.mainUrl || "https://placehold.co/300x300?text=No+Image",
+            p.mainUrl ||
+            p.imgUrl ||
+            p.img_url ||
+            "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
           originalPrice: p.basePrice ? parseFloat(p.basePrice) : null,
           category: p.categoryName || "Chưa phân loại",
@@ -70,17 +73,20 @@ export const useHomePage = () => {
   }, [products]);
 
   const handleAddToCart = async (productId) => {
-    const product = products.find(p => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (!product) return;
-    addToCart({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      image: product.image,
-      price: product.price,
-      size: null,
-    }, 1);
-    addToast(`Đã thêm "${product.name}" vào giỏ hàng`, 'success');
+    addToCart(
+      {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        image: product.image,
+        price: product.price,
+        size: null,
+      },
+      1,
+    );
+    addToast(`Đã thêm "${product.name}" vào giỏ hàng`, "success");
   };
 
   const handleToggleFavorite = async (productId) => {

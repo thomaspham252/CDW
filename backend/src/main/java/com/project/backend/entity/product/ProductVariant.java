@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @AllArgsConstructor
@@ -31,8 +31,11 @@ public class ProductVariant {
 
     private String size;
 
+    @Column(name = "color")
+    private String color;
+
     // Danh sách ảnh thuộc biến thể này (is_main = true là ảnh chính)
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ProductImage> images;
+    private Set<ProductImage> images;
 
 }

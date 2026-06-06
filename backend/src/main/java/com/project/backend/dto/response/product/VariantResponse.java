@@ -13,5 +13,6 @@ public class VariantResponse {
     private BigDecimal price;
     private BigDecimal basePrice;
     private String size;
+    private String color;
     private List<ImageResponse> images;
 }

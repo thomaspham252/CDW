@@ -58,7 +58,10 @@ export const useProductsPage = () => {
           name: p.name,
           slug: p.slug,
           image:
-            p.mainUrl || "https://placehold.co/300x300?text=No+Image",
+            p.mainUrl ||
+            p.imgUrl ||
+            p.img_url ||
+            "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
           category: p.categoryName || "Chưa phân loại",
           rating: 5, // Backend chưa có rating
@@ -192,14 +195,17 @@ export const useProductsPage = () => {
       const product = products.find((p) => p.id === productId);
       if (!product) return;
 
-      addToCart({
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        image: product.image,
-        price: product.price,
-        size: null, // Trang danh sách không chọn size
-      }, 1);
+      addToCart(
+        {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          image: product.image,
+          price: product.price,
+          size: null, // Trang danh sách không chọn size
+        },
+        1,
+      );
 
       if (user)
         await notificationsAPI.create(

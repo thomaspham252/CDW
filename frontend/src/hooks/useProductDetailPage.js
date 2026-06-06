@@ -111,10 +111,13 @@ export const useProductDetailPage = (id) => {
               firstVariant.images[0].imgUrl;
           }
 
-          // Tạo types từ variants (size)
-          mappedProduct.types = data.variants
-            .filter((v) => v.size)
-            .map((v) => v.size);
+          const sizes = data.variants.map((v) => v.size).filter(Boolean);
+          const colors = data.variants
+            .map((v) => v.color || v.colorName || v.color_name)
+            .filter(Boolean);
+
+          mappedProduct.types = [...new Set(sizes)];
+          mappedProduct.colors = [...new Set(colors)];
         }
 
         setProduct(mappedProduct);
@@ -144,7 +147,10 @@ export const useProductDetailPage = (id) => {
             name: p.name,
             slug: p.slug,
             image:
-              p.mainUrl || "https://placehold.co/300x300?text=No+Image",
+              p.mainUrl ||
+              p.imgUrl ||
+              p.img_url ||
+              "https://placehold.co/300x300?text=No+Image",
             price: p.price ? parseFloat(p.price) : 0,
             category: p.categoryName || "Chưa phân loại",
           }));
@@ -201,14 +207,17 @@ export const useProductDetailPage = (id) => {
     try {
       setAdding(true);
       // Truyền object đầy đủ vào CartContext
-      addToCart({
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        image: product.image,
-        price: product.price,
-        size: selectedType || selectedColor || null,
-      }, quantity);
+      addToCart(
+        {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          image: product.image,
+          price: product.price,
+          size: selectedType || selectedColor || null,
+        },
+        quantity,
+      );
       if (user)
         await notificationsAPI.create(
           user.id,

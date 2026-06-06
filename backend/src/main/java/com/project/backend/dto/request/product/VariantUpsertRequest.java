@@ -17,6 +17,8 @@ public class VariantUpsertRequest {
 
     private String size; // tuỳ chọn (ví dụ: "250ml", "500g")
 
+    private String color; // tuỳ chọn (ví dụ: "Đỏ", "Nâu")
+
     @Valid // cascade validate sang ImageUpsertRequest
     private ImageUpsertRequest image;
 }
