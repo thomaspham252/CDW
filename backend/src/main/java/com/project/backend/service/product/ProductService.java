@@ -8,8 +8,11 @@ import com.project.backend.dto.response.product.ImageResponse;
 import com.project.backend.dto.response.product.ProductDetailResponse;
 import com.project.backend.dto.response.product.ProductSummaryResponse;
 import com.project.backend.dto.response.product.VariantResponse;
+import com.project.backend.entity.product.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 public interface ProductService {
 
@@ -35,6 +38,9 @@ public interface ProductService {
 
     /** Danh sách toàn bộ sản phẩm, phân trang (dùng cho admin). */
     Page<ProductSummaryResponse> listAdmin(Pageable pageable);
+
+    /** Lấy danh sách toàn bộ danh mục sản phẩm. */
+    List<Category> listCategories();
 
     // ── Variant operations ───────────────────────────────────────────────────
 
