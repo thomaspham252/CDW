@@ -126,6 +126,12 @@ public class ProductServiceImpl implements ProductService {
         return mapper.toDetail(product);
     }
 
+    /** Lấy danh sách toàn bộ danh mục sản phẩm. */
+    @Override
+    public List<Category> listCategories() {
+        return categoryRepo.findAll();
+    }
+
     /**
      * Lấy chi tiết sản phẩm theo slug (dùng cho storefront / SEO URL).
      */
