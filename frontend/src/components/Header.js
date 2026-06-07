@@ -15,11 +15,20 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    if (user) {
-      setFavoritesCount(favoritesAPI.getCount(user.id));
-    } else {
-      setFavoritesCount(0);
-    }
+    const updateCount = () => {
+      if (user) {
+        setFavoritesCount(favoritesAPI.getCount(user.id));
+      } else {
+        setFavoritesCount(0);
+      }
+    };
+
+    updateCount();
+    window.addEventListener('favorites-updated', updateCount);
+
+    return () => {
+      window.removeEventListener('favorites-updated', updateCount);
+    };
   }, [user]);
 
   const handleLogout = () => {
