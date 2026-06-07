@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import MainLayout from './layouts/MainLayout';
@@ -15,6 +15,11 @@ import CheckoutPage from "./pages/checkout/CheckoutPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ScrollToTop from "./components/ScrollToTop";
 import FavoritesPage from "./pages/favorites/FavoritesPage";
+import BlogPage from "./pages/blog/BlogPage";
+import BlogDetailPage from "./pages/blog/BlogDetailPage";
+import ContactPage from "./pages/contact/ContactPage";
+import ProfilePage from "./pages/profile/ProfilePage";
+
 
 function App() {
   return (
@@ -35,6 +40,10 @@ function App() {
                   <Route path="/favorites" element={<FavoritesPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/blog" element={<BlogPage />} />
+                  <Route path="/blog/:slug" element={<BlogDetailPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                 </Route>
               </Routes>
             </div>

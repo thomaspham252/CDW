@@ -52,10 +52,23 @@ export const AuthProvider = ({ children }) => {
       fullName: data.fullName,
       userId: data.userId,
       role: data.role,
+      phone: data.phone,
+      gender: data.gender,
     };
     localStorage.setItem(USER_KEY, JSON.stringify(userInfo));
     // Đồng bộ token riêng để axiosInstance dùng
     localStorage.setItem("token", data.token);
+    setUser(userInfo);
+  };
+
+  const updateUserLocal = (data) => {
+    const userInfo = {
+      ...user,
+      fullName: data.fullName,
+      phone: data.phone,
+      gender: data.gender,
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(userInfo));
     setUser(userInfo);
   };
 
@@ -90,6 +103,7 @@ export const AuthProvider = ({ children }) => {
         loginGoogle,
         register,
         logout,
+        updateUserLocal,
         isAuthenticated: !!user,
         authLoaded,
       }}
