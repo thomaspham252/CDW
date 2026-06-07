@@ -8,6 +8,43 @@ import { useToast } from "./useToast";
 import { notificationsAPI } from "../services/api";
 import productService from "../services/productService"; // API thật từ backend
 
+const CATEGORY_ALIASES = {
+  "phu kien": ["phu kien trang suc"],
+  "trang tri": ["trang tri gom su"],
+  "san pham tu len": ["san pham tu len vai", "len vai"],
+  "san pham tu tho cam": ["tho cam", "san pham tu len vai", "len vai"],
+};
+
+const normalizeCategory = (value = "") =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/&/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const getCategoryKeys = (value) => {
+  const normalized = normalizeCategory(value);
+  return [normalized, ...(CATEGORY_ALIASES[normalized] || [])].filter(Boolean);
+};
+
+const isMatchingCategory = (productCategory, selectedCategory) => {
+  const productKeys = getCategoryKeys(productCategory);
+  const selectedKeys = getCategoryKeys(selectedCategory);
+
+  return selectedKeys.some((selectedKey) =>
+    productKeys.some(
+      (productKey) =>
+        productKey === selectedKey ||
+        productKey.includes(selectedKey) ||
+        selectedKey.includes(productKey),
+    ),
+  );
+};
+
 export const useProductsPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -118,7 +155,9 @@ export const useProductsPage = () => {
 
     // Lọc theo danh mục
     if (selectedCategory) {
-      filtered = filtered.filter((p) => p.category === selectedCategory);
+      filtered = filtered.filter((p) =>
+        isMatchingCategory(p.category, selectedCategory),
+      );
     }
 
     // Tìm kiếm

@@ -138,11 +138,12 @@ public class OrderServiceImpl implements OrderService {
                 // Lấy ảnh đại diện của variant
                 String imageUrl = null;
                 if (variant.getImages() != null && !variant.getImages().isEmpty()) {
+                    // Try to get main image first, otherwise fall back to any image safely (Set -> stream)
                     imageUrl = variant.getImages().stream()
                             .filter(img -> img.getIsMain() != null && img.getIsMain())
                             .map(ProductImage::getImgUrl)
                             .findFirst()
-                            .orElse(variant.getImages().get(0).getImgUrl());
+                            .orElseGet(() -> variant.getImages().stream().findFirst().map(ProductImage::getImgUrl).orElse(null));
                 }
                 ir.setImageUrl(imageUrl);
 

@@ -9,7 +9,7 @@ import '../../styles/checkout/CheckoutPage.css';
 
 const CheckoutPage = () => {
     const { cart, clearCart, getTotalPrice } = useCart();
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, authLoaded } = useAuth();
     const navigate = useNavigate();
 
     // Form inputs state
@@ -31,8 +31,10 @@ const CheckoutPage = () => {
 
     // Pre-fill form if user is authenticated
     useEffect(() => {
+        if (!authLoaded) return;
+
         if (!isAuthenticated) {
-            navigate('/login?redirect=checkout');
+            navigate('/login?redirect=checkout', { replace: true });
             return;
         }
 
@@ -43,7 +45,7 @@ const CheckoutPage = () => {
                 email: user.email || ''
             }));
         }
-    }, [user, isAuthenticated, navigate]);
+    }, [user, isAuthenticated, authLoaded, navigate]);
 
     // Redirection if cart is empty (only if order is not success yet)
     useEffect(() => {
@@ -184,6 +186,14 @@ const CheckoutPage = () => {
                         </Link>
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    if (!authLoaded) {
+        return (
+            <div className="checkout-page">
+                <div className="loading">Đang kiểm tra đăng nhập...</div>
             </div>
         );
     }

@@ -1,14 +1,24 @@
-import { useState } from "react";
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import { GoogleLogin } from '@react-oauth/google';
 import '../../styles/auth/LoginPage.css';
 
 const LoginPage = () => {
-    const { login, loginGoogle } = useAuth();
+    const { login, loginGoogle, isAuthenticated, authLoaded } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const redirectPath = searchParams.get("redirect")
+        ? `/${searchParams.get("redirect").replace(/^\/+/, "")}`
+        : "/";
+
+    useEffect(() => {
+        if (authLoaded && isAuthenticated) {
+            navigate(redirectPath, { replace: true });
+        }
+    }, [authLoaded, isAuthenticated, navigate, redirectPath]);
 
     // Đăng nhập bằng email/password
     const handleSubmit = async (e) => {
@@ -19,7 +29,7 @@ const LoginPage = () => {
         const password = e.target.password.value;
         try {
             await login(email, password);
-            navigate("/");
+            navigate(redirectPath, { replace: true });
         } catch (err) {
             setError(err.response?.data?.message || "Sai email hoặc mật khẩu");
         } finally {
@@ -31,11 +41,19 @@ const LoginPage = () => {
     const handleGoogleSuccess = async (credential) => {
         try {
             await loginGoogle(credential.credential);
-            navigate("/");
+            navigate(redirectPath, { replace: true });
         } catch (err) {
             setError(err.response?.data?.message || "Đăng nhập Google thất bại");
         }
     };
+
+    if (!authLoaded) {
+        return (
+            <div className="login-page">
+                <div className="loading">Đang kiểm tra đăng nhập...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="login-page">

@@ -7,27 +7,27 @@ import "../../styles/home/HomePage.css";
 
 const CRAFT_CATEGORIES = [
   {
-    name: "Gốm & Sứ",
-    sub: "Đồ gốm thủ công",
-    slug: "trang-tri",
+    name: "Phụ kiện",
+    sub: "Phụ kiện handmade",
+    slug: "phu-kien",
     img: "https://file.hstatic.net/200000151225/file/bo_2_coc_gom_su_handmade_cao_cap_praca__4__grande.jpg",
   },
   {
-    name: "Dệt & Vải",
-    sub: "Sợi tự nhiên",
-    slug: "san-pham-tu-len",
+    name: "Trang trí",
+    sub: "Đồ trang trí thủ công",
+    slug: "trang-tri",
     img: "https://dantra.vn/uploads/san-pham/vai-nem-goi/vai-tho-cam-bana/tho-cam-5.jpg",
   },
   {
-    name: "Đồ gỗ",
-    sub: "Gỗ bền vững",
-    slug: "do-go",
+    name: "Sản phẩm từ len",
+    sub: "Sợi len thủ công",
+    slug: "san-pham-tu-len",
     img: "https://35smhome.com/wp-content/uploads/2024/06/gia-cong-san-pham-go--1080x428.jpg",
   },
   {
-    name: "Trang sức",
-    sub: "Phụ kiện tinh chọn",
-    slug: "phu-kien",
+    name: "Sản phẩm từ thổ cẩm",
+    sub: "Vải thổ cẩm",
+    slug: "san-pham-tu-tho-cam",
     img: "https://nvhphunu.vn/wp-content/uploads/2023/12/etsy-jewelry-featured-image-1.webp",
   },
 ];
