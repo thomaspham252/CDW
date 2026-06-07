@@ -1,8 +1,37 @@
+import api from "./axiosInstance";
+
 export const favoritesAPI = {
-  getCount: (userId) => 3,
-  isFavorite: (productId, userId) => false,
-  addToFavorites: (productId, userId) => Promise.resolve(true),
-  removeFromFavorites: (productId, userId) => Promise.resolve(true),
+  getProducts: async () => {
+    const response = await api.get("/api/wishlist");
+    return response.data;
+  },
+
+  getIds: async () => {
+    const response = await api.get("/api/wishlist/ids");
+    return response.data;
+  },
+
+  getCount: async () => {
+    const response = await api.get("/api/wishlist/count");
+    return response.data.count || 0;
+  },
+
+  isFavorite: async (productId) => {
+    const response = await api.get(`/api/wishlist/${productId}/exists`);
+    return Boolean(response.data.favorite);
+  },
+
+  addToFavorites: async (productId) => {
+    const response = await api.post(`/api/wishlist/${productId}`);
+    window.dispatchEvent(new Event("wishlist-updated"));
+    return response.data;
+  },
+
+  removeFromFavorites: async (productId) => {
+    const response = await api.delete(`/api/wishlist/${productId}`);
+    window.dispatchEvent(new Event("wishlist-updated"));
+    return response.data;
+  },
 };
 
 export const notificationsAPI = {

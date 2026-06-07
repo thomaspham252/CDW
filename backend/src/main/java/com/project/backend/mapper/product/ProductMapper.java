@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -56,24 +57,26 @@ public class ProductMapper {
         BigDecimal price = null;
         BigDecimal basePrice = null;
 
-        // Tìm variant có giá thấp nhất
+        // Tìm variant có giá thấp nhất; nếu dữ liệu cũ thiếu price thì vẫn fallback variant đầu tiên.
         if (product.getVariants() != null && !product.getVariants().isEmpty()) {
             ProductVariant cheapestVariant = product.getVariants().stream()
+                    .filter(variant -> variant.getPrice() != null)
                     .min(Comparator.comparing(ProductVariant::getPrice))
-                    .orElse(null);
+                    .orElseGet(() -> product.getVariants().stream().findFirst().orElse(null));
 
             if (cheapestVariant != null) {
                 price = cheapestVariant.getPrice();
                 basePrice = cheapestVariant.getBasePrice();
 
-                // Tìm ảnh chính của variant này
-                if (cheapestVariant.getImages() != null) {
-                    mainUrl = cheapestVariant.getImages().stream()
-                            .filter(img -> Boolean.TRUE.equals(img.getIsMain()))
-                            .map(ProductImage::getImgUrl)
-                            .findFirst()
-                            .orElse(null);
-                }
+                mainUrl = findImageUrl(cheapestVariant);
+            }
+
+            if (mainUrl == null) {
+                mainUrl = product.getVariants().stream()
+                        .map(this::findImageUrl)
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse(null);
             }
         }
 
@@ -87,6 +90,23 @@ public class ProductMapper {
                 .isActive(product.getIsActive())
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .build();
+    }
+
+    private String findImageUrl(ProductVariant variant) {
+        if (variant == null || variant.getImages() == null || variant.getImages().isEmpty()) {
+            return null;
+        }
+
+        return variant.getImages().stream()
+                .filter(img -> Boolean.TRUE.equals(img.getIsMain()))
+                .map(ProductImage::getImgUrl)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(() -> variant.getImages().stream()
+                        .map(ProductImage::getImgUrl)
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse(null));
     }
 
     /**

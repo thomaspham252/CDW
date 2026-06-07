@@ -14,6 +14,7 @@ import CartPage from "./pages/cart/CartPage";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ScrollToTop from "./components/ScrollToTop";
+import FavoritesPage from "./pages/favorites/FavoritesPage";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
                   <Route path="/products" element={<ProductsPage />} />
                   <Route path="/products/:slug" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
+                  <Route path="/favorites" element={<FavoritesPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                 </Route>

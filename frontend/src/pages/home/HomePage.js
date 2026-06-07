@@ -35,7 +35,7 @@ const CRAFT_CATEGORIES = [
 const HomePage = () => {
   const {
     loading,
-    favorites,
+    isFavorite,
     bestSellingProducts,
     handleAddToCart,
     handleToggleFavorite,
@@ -121,9 +121,7 @@ const HomePage = () => {
         ) : (
           <div className="arrivals-grid">
             {bestSellingProducts.slice(0, 4).map((product) => {
-              const isFav = favorites.some(
-                (id) => String(id) === String(product.id),
-              );
+              const isFav = isFavorite(product.id);
               return (
                 <div key={product.id} className="arrival-card">
                   <div
