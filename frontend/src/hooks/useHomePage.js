@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "./useToast";
 import productService from "../services/productService";
+import { useFavorites } from "./useFavorites";
 
 // DỮ LIỆU CỨNG CHO HOMEPAGE (KHI CHƯA CÓ DB)
 export const useHomePage = () => {
@@ -14,7 +15,7 @@ export const useHomePage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
 
-  const [favorites, setFavorites] = useState([]);
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const [bestSellingProducts, setBestSellingProducts] = useState([]);
   const [discountedProducts, setDiscountedProducts] = useState([]);
 
@@ -90,12 +91,19 @@ export const useHomePage = () => {
   };
 
   const handleToggleFavorite = async (productId) => {
-    if (favorites.includes(productId)) {
-      setFavorites(favorites.filter((id) => id !== productId));
-      addToast("Đã xóa khỏi yêu thích", "success");
-    } else {
-      setFavorites([...favorites, productId]);
-      addToast("Đã thêm vào yêu thích", "success");
+    if (!user) {
+      if (window.confirm("Vui lòng đăng nhập để thêm sản phẩm vào yêu thích. Bạn có muốn đăng nhập ngay bây giờ?")) {
+        navigate("/login");
+      }
+      return;
+    }
+
+    try {
+      const result = await toggleFavorite(productId);
+      addToast(result.message, "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Lỗi khi cập nhật yêu thích", "error");
     }
   };
 
@@ -112,6 +120,7 @@ export const useHomePage = () => {
     products,
     loading,
     favorites,
+    isFavorite,
     bestSellingProducts,
     discountedProducts,
     handleAddToCart,
