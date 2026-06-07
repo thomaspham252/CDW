@@ -197,9 +197,9 @@ const HomePage = () => {
             Sứ mệnh của chúng tôi là gìn giữ cộng đồng nghệ nhân truyền thống và
             bảo vệ môi trường đã tạo nên những chất liệu ấy.
           </p>
-          <button className="story-btn" onClick={handleViewProducts}>
+          <Link to="/blog" className="story-btn" style={{ textDecoration: 'none', display: 'inline-block' }}>
             Đọc câu chuyện của chúng tôi
-          </button>
+          </Link>
         </div>
       </section>
 

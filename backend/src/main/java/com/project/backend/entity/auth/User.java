@@ -30,6 +30,12 @@ public class User {
     @Column(name = "fullname")
     private String fullname;
 
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "gender")
+    private String gender;
+
     @Builder.Default
     @Column(name = "role", nullable = false, length = 20)
     private String role = DEFAULT_ROLE;

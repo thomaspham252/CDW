@@ -49,6 +49,8 @@ public class AuthService {
                 .email(savedUser.getEmail())
                 .fullName(savedUser.getFullname())
                 .role(savedUser.getRole())
+                .phone(savedUser.getPhone())
+                .gender(savedUser.getGender())
                 .build();
     }
 
@@ -73,6 +75,8 @@ public class AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullname())
                 .role(user.getRole())
+                .phone(user.getPhone())
+                .gender(user.getGender())
                 .build();
     }
 
@@ -122,6 +126,42 @@ public class AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullname())
                 .role(user.getRole())
+                .phone(user.getPhone())
+                .gender(user.getGender())
                 .build();
+    }
+
+    public AuthResponseDTO updateProfile(User currentUser, com.project.backend.dto.request.auth.UpdateProfileRequest req) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new AuthException("Người dùng không tồn tại"));
+
+        user.setFullname(req.getFullName());
+        user.setPhone(req.getPhone());
+        user.setGender(req.getGender());
+
+        User savedUser = userRepository.save(user);
+        String token = jwtUtil.generateToken(savedUser);
+
+        return AuthResponseDTO.builder()
+                .token(token)
+                .userId(savedUser.getId())
+                .email(savedUser.getEmail())
+                .fullName(savedUser.getFullname())
+                .role(savedUser.getRole())
+                .phone(savedUser.getPhone())
+                .gender(savedUser.getGender())
+                .build();
+    }
+
+    public void changePassword(User currentUser, com.project.backend.dto.request.auth.ChangePasswordRequest req) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new AuthException("Người dùng không tồn tại"));
+
+        if (!passwordEncoder.matches(req.getOldPassword(), user.getPasswordHash())) {
+            throw new AuthException("Mật khẩu hiện tại không chính xác");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+        userRepository.save(user);
     }
 }

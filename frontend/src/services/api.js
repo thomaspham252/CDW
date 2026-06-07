@@ -1,8 +1,38 @@
+const getFavs = (userId) => {
+  if (!userId) return [];
+  try {
+    const saved = localStorage.getItem(`tth_favs_${userId}`);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+const saveFavs = (userId, favs) => {
+  if (!userId) return;
+  localStorage.setItem(`tth_favs_${userId}`, JSON.stringify(favs));
+  window.dispatchEvent(new Event('favorites-updated'));
+};
+
 export const favoritesAPI = {
-  getCount: (userId) => 3,
-  isFavorite: (productId, userId) => false,
-  addToFavorites: (productId, userId) => Promise.resolve(true),
-  removeFromFavorites: (productId, userId) => Promise.resolve(true),
+  getCount: (userId) => getFavs(userId).length,
+  isFavorite: (productId, userId) => getFavs(userId).includes(productId),
+  addToFavorites: (productId, userId) => {
+    if (!userId) return Promise.resolve(false);
+    const favs = getFavs(userId);
+    if (!favs.includes(productId)) {
+      favs.push(productId);
+      saveFavs(userId, favs);
+    }
+    return Promise.resolve(true);
+  },
+  removeFromFavorites: (productId, userId) => {
+    if (!userId) return Promise.resolve(false);
+    const favs = getFavs(userId);
+    const updated = favs.filter(id => id !== productId);
+    saveFavs(userId, updated);
+    return Promise.resolve(true);
+  },
 };
 
 export const notificationsAPI = {
