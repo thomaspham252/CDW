@@ -37,6 +37,7 @@ public class AuthService {
                 .email(req.getEmail())
                 .passwordHash(encodedPassword)
                 .fullname(req.getFullName())
+                .role(User.DEFAULT_ROLE)
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -47,6 +48,7 @@ public class AuthService {
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
                 .fullName(savedUser.getFullname())
+                .role(savedUser.getRole())
                 .build();
     }
 
@@ -70,6 +72,7 @@ public class AuthService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullname())
+                .role(user.getRole())
                 .build();
     }
 
@@ -96,6 +99,7 @@ public class AuthService {
                                     User.builder()
                                             .email(email)
                                             .fullname(name)
+                                            .role(User.DEFAULT_ROLE)
                                             .build()
                             ));
 
@@ -117,6 +121,7 @@ public class AuthService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullname())
+                .role(user.getRole())
                 .build();
     }
 }

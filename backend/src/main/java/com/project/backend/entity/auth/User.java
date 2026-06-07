@@ -15,6 +15,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class User {
+    public static final String DEFAULT_ROLE = "CUSTOMER";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,6 +29,10 @@ public class User {
 
     @Column(name = "fullname")
     private String fullname;
+
+    @Builder.Default
+    @Column(name = "role", nullable = false, length = 20)
+    private String role = DEFAULT_ROLE;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -293,8 +293,8 @@ ALTER SEQUENCE public.product_images_id_seq OWNED BY public.product_images.id;
 CREATE TABLE public.product_variants (
     id integer NOT NULL,
     product_id integer,
-    price numeric(15,2) NOT NULL,
-    base_price numeric(15,2),
+    price numeric(38,2) NOT NULL,
+    base_price numeric(38,2),
     size character varying(255)
 );
 
@@ -1243,7 +1243,7 @@ COPY public.wishlist (id, user_id, product_id, created_at) FROM stdin;
 -- Name: categories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.categories_id_seq', 13, true);
+SELECT pg_catalog.setval('public.categories_id_seq', 1, false);
 
 
 --
@@ -1297,7 +1297,7 @@ SELECT pg_catalog.setval('public.product_images_id_seq', 77, true);
 -- Name: product_variants_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.product_variants_id_seq', 369, true);
+SELECT pg_catalog.setval('public.product_variants_id_seq', 1, false);
 
 
 --
@@ -1306,7 +1306,7 @@ SELECT pg_catalog.setval('public.product_variants_id_seq', 369, true);
 -- Name: products_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.products_id_seq', 51, true);
+SELECT pg_catalog.setval('public.products_id_seq', 1, false);
 
 
 --

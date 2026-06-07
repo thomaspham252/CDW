@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -116,8 +117,19 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public ProductDetailResponse getById(Integer id) {
-        Product product = findProductById(id);
+        Product product = productRepo.findByIdWithVariants(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm với id='" + id + "'"));
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            List<ProductVariant> variants = variantRepo.findAllByProductIdWithImages(product.getId());
+            product.setVariants(new HashSet<>(variants));
+        }
         return mapper.toDetail(product);
+    }
+
+    /** Lấy danh sách toàn bộ danh mục sản phẩm. */
+    @Override
+    public List<Category> listCategories() {
+        return categoryRepo.findAll();
     }
 
     /**
@@ -125,8 +137,12 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public ProductDetailResponse getBySlug(String slug) {
-        Product product = productRepo.findBySlug(slug)
-                .orElseThrow(() -> new BadRequestException("Không tìm thấy sản phẩm với slug='" + slug + "'"));
+        Product product = productRepo.findBySlugWithVariants(slug)
+            .orElseThrow(() -> new BadRequestException("Không tìm thấy sản phẩm với slug='" + slug + "'"));
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            List<ProductVariant> variants = variantRepo.findAllByProductIdWithImages(product.getId());
+            product.setVariants(new HashSet<>(variants));
+        }
         return mapper.toDetail(product);
     }
 
@@ -136,7 +152,13 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Page<ProductSummaryResponse> listActive(Pageable pageable) {
         return productRepo.findAllByIsActive(true, pageable)
-                .map(mapper::toSummary);
+                .map(product -> {
+                    if (product.getVariants() == null || product.getVariants().isEmpty()) {
+                        List<ProductVariant> variants = variantRepo.findAllByProductIdWithImages(product.getId());
+                        product.setVariants(new HashSet<>(variants));
+                    }
+                    return mapper.toSummary(product);
+                });
     }
 
     /**
@@ -145,15 +167,13 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Page<ProductSummaryResponse> listAdmin(Pageable pageable) {
         return productRepo.findAll(pageable)
-                .map(mapper::toSummary);
-    }
-
-    /**
-     * Lấy danh sách toàn bộ danh mục sản phẩm.
-     */
-    @Override
-    public List<Category> listCategories() {
-        return categoryRepo.findAll();
+                .map(product -> {
+                    if (product.getVariants() == null || product.getVariants().isEmpty()) {
+                        List<ProductVariant> variants = variantRepo.findAllByProductIdWithImages(product.getId());
+                        product.setVariants(new HashSet<>(variants));
+                    }
+                    return mapper.toSummary(product);
+                });
     }
 
     // =========================================================================
@@ -186,6 +206,7 @@ public class ProductServiceImpl implements ProductService {
         variant.setPrice(BigDecimal.valueOf(req.getPrice()));
         variant.setBasePrice(BigDecimal.valueOf(req.getBasePrice()));
         variant.setSize(req.getSize());
+        variant.setColor(req.getColor());
 
         variant = variantRepo.save(variant);
         return mapper.toVariantResponse(variant);
