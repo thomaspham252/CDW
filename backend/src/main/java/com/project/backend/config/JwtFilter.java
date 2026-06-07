@@ -23,9 +23,6 @@ import java.util.Collections;
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
-
-    @Value("${admin.email}")
-    private String adminEmail;
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -75,7 +72,7 @@ public class JwtFilter extends OncePerRequestFilter {
             var auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof User) {
                 User principal = (User) auth.getPrincipal();
-                if (principal.getEmail() == null || !principal.getEmail().equalsIgnoreCase(adminEmail)) {
+                if (principal.getRole() == null || !principal.getRole().equalsIgnoreCase("ADMIN")) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json;charset=UTF-8");
                     response.getWriter().write("{\"message\": \"Access denied. Only the administrator is allowed.\"}");
