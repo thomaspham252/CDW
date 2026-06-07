@@ -39,7 +39,7 @@ const AdminDashboard = () => {
             navigate('/login?redirect=admin');
             return;
         }
-        if (user && user.email.toLowerCase() !== '22130143@st.hcmuaf.edu.vn') {
+        if (user && user.role?.toUpperCase() !== 'ADMIN') {
             navigate('/');
         }
     }, [user, isAuthenticated, navigate]);

@@ -96,7 +96,7 @@ const Header = () => {
 
           {authLoaded && isAuthenticated ? (
             <div className="user-menu">
-              {user?.email?.toLowerCase() === "22130143@st.hcmuaf.edu.vn" && (
+              {user?.role?.toUpperCase() === 'ADMIN' && (
                 <Link to="/admin" className="nav-link">
                   Quản trị
                 </Link>
@@ -173,7 +173,7 @@ const Header = () => {
         </Link>
         {authLoaded && isAuthenticated ? (
           <>
-            {user?.email?.toLowerCase() === "22130143@st.hcmuaf.edu.vn" && (
+            {user?.role?.toUpperCase() === 'ADMIN' && (
               <Link
                 to="/admin"
                 className="mobile-nav-link"
