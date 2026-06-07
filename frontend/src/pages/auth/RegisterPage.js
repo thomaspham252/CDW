@@ -1,13 +1,24 @@
-import { useState } from "react";
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {useAuth} from "../../context/AuthContext";
 import '../../styles/auth/LoginPage.css';
 
 const RegisterPage = () => {
-        const { register } = useAuth();
+        const { register, isAuthenticated, authLoaded } = useAuth();
         const navigate = useNavigate();
+        const [searchParams] = useSearchParams();
         const [error, setError] = useState("");
         const [loading, setLoading] = useState(false);
+        const redirectPath = searchParams.get("redirect")
+            ? `/${searchParams.get("redirect").replace(/^\/+/, "")}`
+            : "/";
+
+    useEffect(() => {
+        if (authLoaded && isAuthenticated) {
+            navigate(redirectPath, { replace: true });
+        }
+    }, [authLoaded, isAuthenticated, navigate, redirectPath]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -19,7 +30,7 @@ const RegisterPage = () => {
 
         try {
             await register(fullName, email, password);
-            navigate("/");
+            navigate(redirectPath, { replace: true });
         } catch (err) {
             setError(err.response?.data?.message || "Đăng ký thất bại");
         } finally {
@@ -27,6 +38,13 @@ const RegisterPage = () => {
         }
     };
 
+    if (!authLoaded) {
+        return (
+            <div className="register-page">
+                <div className="loading">Đang kiểm tra đăng nhập...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="register-page">
