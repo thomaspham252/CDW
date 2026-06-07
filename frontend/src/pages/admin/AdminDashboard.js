@@ -395,7 +395,10 @@ const AdminDashboard = () => {
                                                         value={order.status}
                                                         onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
                                                     >
+                                                        <option value="pending_payment">Chờ thanh toán QR</option>
+                                                        <option value="cod_pending">Chờ xử lý COD</option>
                                                         <option value="pending">Chờ xử lý (Pending)</option>
+                                                        <option value="paid">Đã thanh toán</option>
                                                         <option value="processing">Đang chuẩn bị (Processing)</option>
                                                         <option value="shipped">Đang vận chuyển (Shipped)</option>
                                                         <option value="delivered">Đã giao hàng (Delivered)</option>

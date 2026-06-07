@@ -18,6 +18,7 @@ import com.project.backend.dto.response.analytics.AnalyticsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.project.backend.exception.BadRequestException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -28,6 +29,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private static final String PAYMENT_METHOD_BANK_TRANSFER = "BANK_TRANSFER";
+    private static final String PAYMENT_METHOD_COD = "COD";
+    private static final BigDecimal FREE_SHIPPING_THRESHOLD = BigDecimal.valueOf(500000);
+    private static final BigDecimal STANDARD_SHIPPING_FEE = BigDecimal.valueOf(35000);
+
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductVariantRepository productVariantRepository;
@@ -37,6 +43,15 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(OrderCreateRequest request, User currentUser) {
+        String paymentMethod = request.getPaymentMethod();
+        if (!PAYMENT_METHOD_BANK_TRANSFER.equals(paymentMethod) && !PAYMENT_METHOD_COD.equals(paymentMethod)) {
+            throw new BadRequestException("Phương thức thanh toán không hợp lệ");
+        }
+
+        String initialStatus = PAYMENT_METHOD_BANK_TRANSFER.equals(paymentMethod)
+                ? "pending_payment"
+                : "cod_pending";
+
         // 1. Khởi tạo thực thể Order
         Order order = Order.builder()
                 .userId(currentUser != null ? currentUser.getId() : null)
@@ -48,9 +63,9 @@ public class OrderServiceImpl implements OrderService {
                 .district(request.getDistrict())
                 .province(request.getProvince())
                 .note(request.getNote())
-                .paymentMethod(request.getPaymentMethod())
+                .paymentMethod(paymentMethod)
                 .couponCode(request.getCouponCode())
-                .status("pending")
+                .status(initialStatus)
                 .build();
 
         // 2. Tính toán tiền hàng và phí ship từ DB để bảo mật
@@ -75,10 +90,10 @@ public class OrderServiceImpl implements OrderService {
             orderItems.add(orderItem);
         }
 
-        // Phí vận chuyển: Free ship cho đơn từ 500.000đ, ngược lại 30.000đ
-        BigDecimal shippingFee = subtotal.compareTo(BigDecimal.valueOf(500000)) >= 0 
+        // Phí vận chuyển: Free ship cho đơn từ 500.000đ, ngược lại 35.000đ
+        BigDecimal shippingFee = subtotal.compareTo(FREE_SHIPPING_THRESHOLD) >= 0
                 ? BigDecimal.ZERO 
-                : BigDecimal.valueOf(30000);
+                : STANDARD_SHIPPING_FEE;
 
         order.setShippingFee(shippingFee);
         order.setTotalAmount(subtotal.add(shippingFee));

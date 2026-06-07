@@ -6,6 +6,12 @@ import { FontAwesomeIcon, icons } from '../../utils/icons';
 import { formatPrice } from '../../utils/formatPrice';
 import api from '../../services/axiosInstance';
 import addressService from '../../services/addressService';
+import {
+    BANK_TRANSFER_CONFIG,
+    getShippingFee,
+    getTransferContent,
+    getVietQrImageUrl
+} from '../../config/paymentConfig';
 import '../../styles/checkout/CheckoutPage.css';
 
 const CheckoutPage = () => {
@@ -173,7 +179,7 @@ const CheckoutPage = () => {
         }));
     };
 
-    const shippingFee = getTotalPrice() >= 500000 ? 0 : 35000;
+    const shippingFee = getShippingFee(getTotalPrice());
     const finalTotal = getTotalPrice() + shippingFee;
 
     const handleSubmit = async (e) => {
@@ -257,18 +263,18 @@ const CheckoutPage = () => {
 
                     {orderSuccess.paymentMethod === 'BANK_TRANSFER' && (
                         <div className="bank-transfer-instructions">
-                            <h3>Hướng dẫn chuyển khoản nhanh bằng QR Code</h3>
-                            <p className="inst-desc">Bạn hãy quét mã QR dưới đây hoặc chuyển khoản theo thông tin ngân hàng để thanh toán cho đơn hàng.</p>
+                            <h3>Quét QR để thanh toán</h3>
+                            <p className="inst-desc">Mở ứng dụng ngân hàng, quét mã VietQR bên dưới và kiểm tra đúng số tiền trước khi chuyển khoản.</p>
                             
                             <div className="bank-info-box">
-                                <div className="bank-logo-title">Ngân hàng VietinBank</div>
+                                <div className="bank-logo-title">{BANK_TRANSFER_CONFIG.bankName}</div>
                                 <div className="bank-info-row">
                                     <span>Số tài khoản:</span>
-                                    <strong className="copyable">102874981726</strong>
+                                    <strong className="copyable">{BANK_TRANSFER_CONFIG.accountNo}</strong>
                                 </div>
                                 <div className="bank-info-row">
                                     <span>Chủ tài khoản:</span>
-                                    <strong>CỬA HÀNG HANDMADE CDW</strong>
+                                    <strong>{BANK_TRANSFER_CONFIG.displayAccountName}</strong>
                                 </div>
                                 <div className="bank-info-row">
                                     <span>Số tiền:</span>
@@ -276,17 +282,17 @@ const CheckoutPage = () => {
                                 </div>
                                 <div className="bank-info-row">
                                     <span>Nội dung CK:</span>
-                                    <strong className="copyable">CDW {orderSuccess.id}</strong>
+                                    <strong className="copyable">{getTransferContent(orderSuccess.id)}</strong>
                                 </div>
                             </div>
 
                             <div className="qr-code-wrapper">
                                 <img 
-                                    src={`https://img.vietqr.io/image/vietinbank-102874981726-compact2.png?amount=${orderSuccess.totalAmount}&addInfo=CDW%20${orderSuccess.id}&accountName=CUA%20HANG%20HANDMADE%20CDW`} 
+                                    src={getVietQrImageUrl(orderSuccess)}
                                     alt="VietQR Bank Transfer" 
                                     className="qr-image"
                                 />
-                                <span className="qr-hint"><FontAwesomeIcon icon={icons.shield} /> Giao dịch được bảo mật tự động</span>
+                                <span className="qr-hint"><FontAwesomeIcon icon={icons.shield} /> Đơn hàng sẽ được xử lý sau khi shop xác nhận thanh toán</span>
                             </div>
                         </div>
                     )}
