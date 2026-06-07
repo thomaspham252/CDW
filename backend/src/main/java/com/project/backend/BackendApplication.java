@@ -23,20 +23,22 @@ public class BackendApplication {
 			userRepository.findByEmail(adminEmail).ifPresentOrElse(
 				user -> {
 					user.setPasswordHash(passwordEncoder.encode(defaultPassword));
+					user.setRole("ADMIN");
 					if (user.getFullname() == null || user.getFullname().isEmpty()) {
 						user.setFullname("Admin");
 					}
 					userRepository.save(user);
-					System.out.println(">>> Updated admin user password hash successfully! <<<");
+					System.out.println(">>> Updated admin user password hash and role successfully! <<<");
 				},
 				() -> {
 					User admin = User.builder()
 							.email(adminEmail)
 							.fullname("Admin")
 							.passwordHash(passwordEncoder.encode(defaultPassword))
+							.role("ADMIN")
 							.build();
 					userRepository.save(admin);
-					System.out.println(">>> Created admin user successfully! <<<");
+					System.out.println(">>> Created admin user with ADMIN role successfully! <<<");
 				}
 			);
 		};
