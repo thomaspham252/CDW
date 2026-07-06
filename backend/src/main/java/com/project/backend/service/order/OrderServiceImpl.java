@@ -32,11 +32,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
+
+    private static final String PAYMENT_METHOD_BANK_TRANSFER = "BANK_TRANSFER";
+    private static final String PAYMENT_METHOD_COD = "COD";
+    private static final BigDecimal FREE_SHIPPING_THRESHOLD = BigDecimal.valueOf(500000);
+    private static final BigDecimal STANDARD_SHIPPING_FEE = BigDecimal.valueOf(35000);
+    private static final Set<String> ALLOWED_STATUSES = Set.of(
+            "pending_payment",
+            "cod_pending",
+            "pending",
+            "paid",
+            "processing",
+            "shipped",
+            "delivered",
+            "cancelled"
+    );
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -245,36 +261,12 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse updateOrderStatus(Integer id, String status) {
+        if (status == null || !ALLOWED_STATUSES.contains(status.trim().toLowerCase())) {
+            throw new BadRequestException("Trạng thái đơn hàng không hợp lệ: " + status);
+        }
+
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with id: " + id));
-
-        String oldStatus = order.getStatus();
-
-        // 1. Trả lại kho nếu huỷ đơn (chuyển sang 'cancelled' từ trạng thái khác)
-        if (!"cancelled".equalsIgnoreCase(oldStatus) && "cancelled".equalsIgnoreCase(status)) {
-            for (OrderItem item : order.getItems()) {
-                ProductVariant variant = item.getProductVariant();
-                variant.setStock(variant.getStock() + item.getQuantity());
-                productVariantRepository.save(variant);
-            }
-        }
-
-        // 2. Trừ kho nếu khôi phục đơn (chuyển từ 'cancelled' sang trạng thái khác)
-        if ("cancelled".equalsIgnoreCase(oldStatus) && !"cancelled".equalsIgnoreCase(status)) {
-            for (OrderItem item : order.getItems()) {
-                ProductVariant variant = item.getProductVariant();
-                if (variant.getStock() < item.getQuantity()) {
-                    throw new com.project.backend.exception.BadRequestException(
-                        "Không thể khôi phục đơn hàng. Sản phẩm '" + variant.getProduct().getName() + 
-                        " (" + variant.getSize() + ")' không đủ số lượng trong kho."
-                    );
-                }
-                variant.setStock(variant.getStock() - item.getQuantity());
-                productVariantRepository.save(variant);
-            }
-        }
-
-        order.setStatus(status);
         Order updatedOrder = orderRepository.save(order);
         return mapToOrderResponse(updatedOrder);
     }

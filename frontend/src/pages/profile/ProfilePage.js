@@ -5,7 +5,6 @@ import { useCart } from "../../context/CartContext";
 import { FontAwesomeIcon, icons } from "../../utils/icons";
 import { formatPrice } from "../../utils/formatPrice";
 import { updateProfile, changePassword, getMyOrders } from "../../services/auth/authService";
-import productService from "../../services/productService";
 import { favoritesAPI } from "../../services/api";
 import "../../styles/profile/Profile.css";
 
@@ -134,23 +133,16 @@ const ProfilePage = () => {
     if (!user) return;
     try {
       setFavsLoading(true);
-      // Fetch all storefront active products to filter by favorites
-      const response = await productService.getProducts({ page: 0, size: 100 });
-      const savedFavIds = localStorage.getItem(`tth_favs_${user.userId}`);
-      const favIds = savedFavIds ? JSON.parse(savedFavIds) : [];
-      
-      const mappedFavs = response.content
-        .map((p) => ({
+      const wishlistProducts = await favoritesAPI.getProducts();
+
+      const mappedFavs = wishlistProducts.map((p) => ({
           id: p.id,
+          variantId: p.variantId,
           name: p.name,
           slug: p.slug,
           image: p.mainUrl || p.imgUrl || p.img_url || "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
           category: p.categoryName || "Chưa phân loại",
-          defaultVariantId: p.defaultVariantId,
-        }))
-        .filter((p) => favIds.includes(p.id));
-
       setFavoriteProducts(mappedFavs);
     } catch (err) {
       console.error("Lỗi lấy sản phẩm yêu thích:", err);
@@ -381,7 +373,11 @@ const ProfilePage = () => {
   // Orders Tab Filter logic
   const filteredOrders = orders.filter((order) => {
     if (ordersFilter === "all") return true;
-    return order.status?.toLowerCase() === ordersFilter.toLowerCase();
+    const status = order.status?.toLowerCase();
+    if (ordersFilter === "pending") {
+      return ["pending", "pending_payment", "cod_pending", "paid"].includes(status);
+    }
+    return status === ordersFilter.toLowerCase();
   });
 
   const handleOrderDetails = (order) => {
@@ -423,8 +419,6 @@ const ProfilePage = () => {
   const handleAddFavToCart = (product) => {
     addToCart(
       {
-        id: product.id,
-        variantId: product.defaultVariantId || product.id,
         name: product.name,
         slug: product.slug,
         image: product.image,
@@ -772,9 +766,21 @@ const ProfilePage = () => {
                     let statusLabel = "Chờ xử lý";
                     let statusClass = "pending";
                     switch (order.status?.toLowerCase()) {
+                      case "pending_payment":
+                        statusLabel = "Chờ thanh toán";
+                        statusClass = "pending";
+                        break;
+                      case "cod_pending":
+                        statusLabel = "Chờ xử lý COD";
+                        statusClass = "pending";
+                        break;
                       case "pending":
                         statusLabel = "Chờ xử lý";
                         statusClass = "pending";
+                        break;
+                      case "paid":
+                        statusLabel = "Đã thanh toán";
+                        statusClass = "processing";
                         break;
                       case "processing":
                         statusLabel = "Đang xử lý";
@@ -1019,17 +1025,16 @@ const ProfilePage = () => {
                   <li>
                     <span>Trạng thái đơn hàng:</span>
                     <strong style={{ textTransform: "uppercase" }}>
-                      {selectedOrder.status === "pending"
-                        ? "Chờ xử lý"
-                        : selectedOrder.status === "processing"
-                        ? "Đang xử lý"
-                        : selectedOrder.status === "shipped"
-                        ? "Đang giao hàng"
-                        : selectedOrder.status === "delivered"
-                        ? "Đã giao hàng"
-                        : selectedOrder.status === "cancelled"
-                        ? "Đã hủy"
-                        : selectedOrder.status}
+                      {{
+                        pending_payment: "Chờ thanh toán",
+                        cod_pending: "Chờ xử lý COD",
+                        pending: "Chờ xử lý",
+                        paid: "Đã thanh toán",
+                        processing: "Đang xử lý",
+                        shipped: "Đang giao hàng",
+                        delivered: "Đã giao hàng",
+                        cancelled: "Đã hủy",
+                      }[selectedOrder.status] || selectedOrder.status}
                     </strong>
                   </li>
                   <li>

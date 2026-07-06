@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "./useToast";
@@ -116,16 +116,25 @@ export const useProductDetailPage = (id) => {
           image: null,
           images: [],
           price: 0,
+          variants: [],
           colors: [],
           types: [],
         };
 
         // Xử lý variants
         if (data.variants && data.variants.length > 0) {
+          mappedProduct.variants = data.variants.map((variant) => ({
+            id: variant.id,
+            price: variant.price ? parseFloat(variant.price) : 0,
+            size: variant.size || null,
+            color: variant.color || variant.colorName || variant.color_name || null,
+            images: variant.images || [],
+          }));
+
           // Lấy variant đầu tiên làm mặc định
-          const firstVariant = data.variants[0];
+          const firstVariant = mappedProduct.variants[0];
           mappedProduct.price = firstVariant.price
-            ? parseFloat(firstVariant.price)
+            ? firstVariant.price
             : 0;
 
           // Lấy images từ variant
@@ -136,9 +145,9 @@ export const useProductDetailPage = (id) => {
               firstVariant.images[0].imgUrl;
           }
 
-          const sizes = data.variants.map((v) => v.size).filter(Boolean);
-          const colors = data.variants
-            .map((v) => v.color || v.colorName || v.color_name)
+          const sizes = mappedProduct.variants.map((v) => v.size).filter(Boolean);
+          const colors = mappedProduct.variants
+            .map((v) => v.color)
             .filter(Boolean);
 
           mappedProduct.types = [...new Set(sizes)];
@@ -231,22 +240,13 @@ export const useProductDetailPage = (id) => {
 
     try {
       setAdding(true);
-      // Find the matched variant to get its ID
-      const matchedVariant = product.variants.find(v => {
-        const matchColor = !selectedColor || v.color === selectedColor;
-        const matchSize = !selectedType || v.size === selectedType;
-        return matchColor && matchSize;
-      });
-
       // Truyền object đầy đủ vào CartContext
       addToCart(
         {
-          id: product.id,
-          variantId: matchedVariant ? matchedVariant.id : product.id,
           name: product.name,
           slug: product.slug,
           image: product.image,
-          price: product.price,
+          price: selectedVariant?.price || product.price,
           size: selectedType || selectedColor || null,
         },
         quantity,

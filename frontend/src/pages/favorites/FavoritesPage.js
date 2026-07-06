@@ -26,6 +26,44 @@ const FavoritesPage = () => {
       try {
         setLoading(true);
         setError("");
+        const [wishlistProducts, catalogResponse] = await Promise.all([
+          favoritesAPI.getProducts(),
+          productService.getProducts({
+            page: 0,
+            size: 200,
+            sort: "id,desc",
+          }),
+        ]);
+        const catalogById = new Map(
+          (catalogResponse.content || []).map((product) => [Number(product.id), product]),
+        );
+
+        setProducts(
+          wishlistProducts.map((product) => {
+            const catalogProduct = catalogById.get(Number(product.id)) || {};
+            const image =
+              product.mainUrl ||
+              product.imgUrl ||
+              product.img_url ||
+              catalogProduct.mainUrl ||
+              catalogProduct.imgUrl ||
+              catalogProduct.img_url ||
+              "https://placehold.co/500x500?text=No+Image";
+            const rawPrice =
+              product.price ??
+              catalogProduct.price ??
+              null;
+
+            return {
+            id: product.id,
+            variantId: product.variantId || catalogProduct.variantId,
+            name: catalogProduct.name || product.name,
+            slug: catalogProduct.slug || product.slug,
+            image,
+            price: rawPrice !== null && rawPrice !== undefined ? parseFloat(rawPrice) : null,
+          };
+          }),
+        );
         
         // Gọi API backend lấy danh sách sản phẩm active
         const response = await productService.getProducts({

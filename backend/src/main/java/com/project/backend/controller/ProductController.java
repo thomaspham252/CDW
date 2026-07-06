@@ -39,8 +39,10 @@ public class ProductController {
      */
     @GetMapping("/api/products")
     public ResponseEntity<Page<ProductSummaryResponse>> listActive(
+            @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) String search,
             @PageableDefault(size = 12, sort = "id") Pageable pageable) {
-        return ResponseEntity.ok(productService.listActive(pageable));
+        return ResponseEntity.ok(productService.listActive(pageable, categoryId, search));
     }
 
     /**

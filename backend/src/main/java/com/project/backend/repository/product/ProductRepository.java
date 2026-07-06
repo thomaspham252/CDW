@@ -20,6 +20,37 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     Page<Product> findAllByIsActive(Boolean isActive, Pageable pageable);
 
     @EntityGraph(attributePaths = {"variants", "variants.images", "category"})
+    Page<Product> findAllByIsActiveAndCategoryId(Boolean isActive, Integer categoryId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"variants", "variants.images", "category"})
+    @Query("""
+            select p from Product p
+            where p.isActive = true
+              and (
+                lower(p.name) like lower(concat('%', :keyword, '%'))
+                or lower(coalesce(p.description, '')) like lower(concat('%', :keyword, '%'))
+            )
+            """)
+    Page<Product> searchActiveByKeyword(
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {"variants", "variants.images", "category"})
+    @Query("""
+            select p from Product p
+            where p.isActive = true
+              and p.category.id = :categoryId
+              and (
+                lower(p.name) like lower(concat('%', :keyword, '%'))
+                or lower(coalesce(p.description, '')) like lower(concat('%', :keyword, '%'))
+            )
+            """)
+    Page<Product> searchActiveByCategoryAndKeyword(
+            @Param("categoryId") Integer categoryId,
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {"variants", "variants.images", "category"})
     Page<Product> findAll(Pageable pageable);
 
         @Query("select distinct p from Product p " +

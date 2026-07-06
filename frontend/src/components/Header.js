@@ -15,6 +15,16 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    const loadFavoritesCount = async () => {
+      if (!authLoaded || !isAuthenticated || !user) {
+        setFavoritesCount(0);
+        return;
+      }
+
+      try {
+        setFavoritesCount(await favoritesAPI.getCount());
+      } catch (err) {
+        console.error("Lỗi tải số lượng yêu thích:", err);
     const updateCount = () => {
       if (user) {
         setFavoritesCount(favoritesAPI.getCount(user.id));
@@ -23,6 +33,12 @@ const Header = () => {
       }
     };
 
+    loadFavoritesCount();
+    window.addEventListener("wishlist-updated", loadFavoritesCount);
+
+    return () =>
+      window.removeEventListener("wishlist-updated", loadFavoritesCount);
+  }, [user, authLoaded, isAuthenticated]);
     updateCount();
     window.addEventListener('favorites-updated', updateCount);
 

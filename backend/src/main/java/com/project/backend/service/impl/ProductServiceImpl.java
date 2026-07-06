@@ -150,8 +150,20 @@ public class ProductServiceImpl implements ProductService {
      * Danh sách sản phẩm đang active (isActive = true), phân trang – dùng cho storefront.
      */
     @Override
-    public Page<ProductSummaryResponse> listActive(Pageable pageable) {
-        return productRepo.findAllByIsActive(true, pageable)
+    public Page<ProductSummaryResponse> listActive(Pageable pageable, Integer categoryId, String search) {
+        String keyword = normalizeKeyword(search);
+        Page<Product> page;
+        if (categoryId != null && keyword != null) {
+            page = productRepo.searchActiveByCategoryAndKeyword(categoryId, keyword, pageable);
+        } else if (categoryId != null) {
+            page = productRepo.findAllByIsActiveAndCategoryId(true, categoryId, pageable);
+        } else if (keyword != null) {
+            page = productRepo.searchActiveByKeyword(keyword, pageable);
+        } else {
+            page = productRepo.findAllByIsActive(true, pageable);
+        }
+
+        return page
                 .map(product -> {
                     if (product.getVariants() == null || product.getVariants().isEmpty()) {
                         List<ProductVariant> variants = variantRepo.findAllByProductIdWithImages(product.getId());
@@ -159,6 +171,14 @@ public class ProductServiceImpl implements ProductService {
                     }
                     return mapper.toSummary(product);
                 });
+    }
+
+    private String normalizeKeyword(String search) {
+        if (search == null) {
+            return null;
+        }
+        String trimmed = search.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**
