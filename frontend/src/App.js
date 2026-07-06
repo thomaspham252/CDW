@@ -14,10 +14,12 @@ import CartPage from "./pages/cart/CartPage";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ScrollToTop from "./components/ScrollToTop";
+import FavoritesPage from "./pages/favorites/FavoritesPage";
 import BlogPage from "./pages/blog/BlogPage";
 import BlogDetailPage from "./pages/blog/BlogDetailPage";
 import ContactPage from "./pages/contact/ContactPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+
 
 function App() {
   return (
@@ -35,6 +37,7 @@ function App() {
                   <Route path="/products" element={<ProductsPage />} />
                   <Route path="/products/:slug" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
+                  <Route path="/favorites" element={<FavoritesPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/blog" element={<BlogPage />} />
