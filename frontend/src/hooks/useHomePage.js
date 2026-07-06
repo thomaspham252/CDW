@@ -44,6 +44,7 @@ export const useHomePage = () => {
           rating: 5,
           reviews: 0,
           stock: p.stock !== null && p.stock !== undefined ? p.stock : 0,
+          variantId: p.variantId,
           defaultVariantId: p.defaultVariantId,
         }));
 
@@ -77,11 +78,16 @@ export const useHomePage = () => {
   const handleAddToCart = async (productId) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
-    const variantId = product.defaultVariantId || product.variantId || product.id;
+    const variantId = product.variantId || product.defaultVariantId;
+    if (!variantId) {
+      addToast("Sản phẩm chưa có phân loại để thêm vào giỏ hàng", "error");
+      return;
+    }
     addToCart(
       {
         id: variantId,
-        variantId: variantId,
+        productId: product.id,
+        variantId,
         name: product.name,
         slug: product.slug,
         image: product.image,

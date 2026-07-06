@@ -155,6 +155,7 @@ const ProfilePage = () => {
       const mappedFavs = wishlistProducts.map((p) => ({
         id: p.id,
         variantId: p.variantId,
+        defaultVariantId: p.defaultVariantId,
         name: p.name,
         slug: p.slug,
         image: resolveImageUrl(p.mainUrl || p.imgUrl || p.img_url),
@@ -453,8 +454,17 @@ const ProfilePage = () => {
   };
 
   const handleAddFavToCart = (product) => {
+    const variantId = product.variantId || product.defaultVariantId;
+    if (!variantId) {
+      alert("Sản phẩm chưa có phân loại để thêm vào giỏ hàng.");
+      return;
+    }
+
     addToCart(
       {
+        id: variantId,
+        productId: product.id,
+        variantId,
         name: product.name,
         slug: product.slug,
         image: product.image,

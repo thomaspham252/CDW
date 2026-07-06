@@ -32,6 +32,7 @@ public class HandmadeProductSeeder implements CommandLineRunner {
         System.out.println(">>> STARTING HANDMADE PRODUCT DATABASE SEEDER... <<<");
 
         try {
+            // Mark old products as inactive, keep handmade products active
             List<Product> existingProducts = productRepository.findAll();
             for (Product p : existingProducts) {
                 if (p.getCategory() != null && 
@@ -50,14 +51,25 @@ public class HandmadeProductSeeder implements CommandLineRunner {
             System.err.println("Error deactivating old products: " + e.getMessage());
         }
 
-        // 2. Create Categories
-        Category catJewelry = getOrCreateCategory("Trang sức Handmade", "trang-suc-handmade", "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=600");
-        Category catHome = getOrCreateCategory("Trang trí nhà cửa", "trang-tri-nha-cua", "https://images.unsplash.com/photo-1528164344705-47542687000d?q=80&w=600");
-        Category catFashion = getOrCreateCategory("Thời trang & Phụ kiện", "thoi-trang-phu-kien", "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600");
-        Category catGifts = getOrCreateCategory("Quà tặng nghệ thuật", "qua-tang-nghe-thuat", "https://images.unsplash.com/photo-1619623868779-1bf4ef8c82eb?q=80&w=600");
+        try {
+            // Create Categories (wrapped in try-catch to handle constraint violations)
+            Category catJewelry = getOrCreateCategory("Trang sức Handmade", "trang-suc-handmade", "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=600");
+            Category catHome = getOrCreateCategory("Trang trí nhà cửa", "trang-tri-nha-cua", "https://images.unsplash.com/photo-1528164344705-47542687000d?q=80&w=600");
+            Category catFashion = getOrCreateCategory("Thời trang & Phụ kiện", "thoi-trang-phu-kien", "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600");
+            Category catGifts = getOrCreateCategory("Quà tặng nghệ thuật", "qua-tang-nghe-thuat", "https://images.unsplash.com/photo-1619623868779-1bf4ef8c82eb?q=80&w=600");
 
-        // 3. Seed Products
-        // Category 1: Trang sức Handmade
+            // Seed Products only if categories were created/found successfully
+            seedProductsForCategory(catJewelry, catHome, catFashion, catGifts);
+            
+            System.out.println(">>> SEEDED HANDMADE PRODUCTS SUCCESSFULLY! <<<");
+        } catch (Exception e) {
+            System.err.println("Error seeding products: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void seedProductsForCategory(Category catJewelry, Category catHome, 
+                                         Category catFashion, Category catGifts) {
         createProduct("Khuyên tai đất sét tự làm", "khuyen-tai-dat-set-tu-lam", 
                 "Khuyên tai độc đáo được tạo hình thủ công từ đất sét polymer cao cấp, mang phong cách hiện đại và thời thượng.", 
                 catJewelry,
@@ -195,20 +207,25 @@ public class HandmadeProductSeeder implements CommandLineRunner {
                 65000,
                 "https://images.unsplash.com/photo-1507036066871-b7e8032b3dea?q=80&w=600"
         );
-
-        System.out.println(">>> SEEDED 15 HANDMADE PRODUCTS SUCCESSFULLY! <<<");
     }
 
     private Category getOrCreateCategory(String name, String slug, String imgUrl) {
-        return categoryRepository.findBySlug(slug)
-                .orElseGet(() -> {
-                    Category cat = Category.builder()
-                            .name(name)
-                            .slug(slug)
-                            .imgURL(imgUrl)
-                            .build();
-                    return categoryRepository.save(cat);
-                });
+        Optional<Category> existing = categoryRepository.findBySlug(slug);
+        if (existing.isPresent()) {
+            // Update existing category's info if needed
+            Category cat = existing.get();
+            cat.setName(name);
+            cat.setImgURL(imgUrl);
+            return categoryRepository.save(cat);
+        } else {
+            // Create new category
+            Category cat = Category.builder()
+                    .name(name)
+                    .slug(slug)
+                    .imgURL(imgUrl)
+                    .build();
+            return categoryRepository.save(cat);
+        }
     }
 
     private void createProduct(String name, String slug, String desc, Category category,

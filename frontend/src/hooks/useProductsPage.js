@@ -203,11 +203,17 @@ export const useProductsPage = () => {
       // Tìm product trong danh sách để lấy đầy đủ thông tin
       const product = products.find((p) => p.id === productId);
       if (!product) return;
+      const variantId = product.variantId || product.defaultVariantId;
+      if (!variantId) {
+        addToast("Sản phẩm chưa có phân loại để thêm vào giỏ hàng", "error");
+        return;
+      }
 
       addToCart(
         {
-          id: product.defaultVariantId || product.variantId || product.id,
-          variantId: product.defaultVariantId || product.variantId || product.id,
+          id: variantId,
+          productId: product.id,
+          variantId,
           name: product.name,
           slug: product.slug,
           image: product.image,

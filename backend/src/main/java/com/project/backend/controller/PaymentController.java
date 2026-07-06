@@ -66,7 +66,9 @@ public class PaymentController {
                     if (hashData.length() > 0) {
                         hashData.append('&');
                     }
-                    hashData.append(fieldName).append('=').append(VNPayConfig.urlEncode(fieldValue));
+                    hashData.append(fieldName)
+                            .append('=')
+                            .append(VNPayConfig.urlEncode(fieldValue));
                 }
             }
 

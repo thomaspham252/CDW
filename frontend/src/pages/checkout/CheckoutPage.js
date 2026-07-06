@@ -271,6 +271,13 @@ const CheckoutPage = () => {
         setCouponError('');
     };
 
+    const handleClearAndFixCart = () => {
+        if (window.confirm('Xóa toàn bộ giỏ hàng và quay lại trang sản phẩm để thêm lại?')) {
+            clearCart();
+            navigate('/products');
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -283,10 +290,31 @@ const CheckoutPage = () => {
         }
 
         // Map cart items to backend format
-        const items = cart.map(item => ({
-            variantId: item.variantId || item.id,
-            quantity: item.quantity
-        }));
+        // IMPORTANT: Cart items must have variantId, not just product id
+        const items = cart.map(item => {
+            // Use variantId if available, otherwise use id (which should be variantId)
+            const itemVariantId = item.variantId || item.id;
+            
+            if (!itemVariantId) {
+                console.error('Cart item missing both variantId and id:', item);
+            }
+            
+            return {
+                variantId: itemVariantId,
+                quantity: item.quantity
+            };
+        });
+
+        // Validate all items have variantId
+        // Check the actual variantId value, not undefined/null/0
+        const invalidItems = items.filter(item => !item.variantId || item.variantId === null || item.variantId === undefined);
+        if (invalidItems.length > 0) {
+            console.error('Invalid cart items:', invalidItems);
+            console.error('Full cart:', cart);
+            setError('Có sản phẩm trong giỏ hàng không hợp lệ. Vui lòng xóa giỏ hàng và thêm sản phẩm lại từ đầu.');
+            setLoading(false);
+            return;
+        }
 
         const orderPayload = {
             ...formData,
@@ -421,7 +449,29 @@ const CheckoutPage = () => {
                         </Link>
                     </div>
 
-                {error && <div className="checkout-error-banner"><FontAwesomeIcon icon={icons.warning} /> {error}</div>}
+                {error && (
+                    <div className="checkout-error-banner">
+                        <FontAwesomeIcon icon={icons.warning} /> {error}
+                        {error.includes('không hợp lệ') && (
+                            <button 
+                                type="button" 
+                                onClick={handleClearAndFixCart}
+                                style={{
+                                    marginLeft: '15px',
+                                    padding: '8px 16px',
+                                    backgroundColor: '#fff',
+                                    border: '1px solid #dc3545',
+                                    borderRadius: '4px',
+                                    color: '#dc3545',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Xóa giỏ hàng & Thêm lại
+                            </button>
+                        )}
+                    </div>
+                )}
                 {addressError && <div className="checkout-error-banner"><FontAwesomeIcon icon={icons.warning} /> {addressError}</div>}
 
                 <form onSubmit={handleSubmit} className="checkout-form-layout">

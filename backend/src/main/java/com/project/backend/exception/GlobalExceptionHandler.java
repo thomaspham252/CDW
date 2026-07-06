@@ -65,9 +65,12 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request) {
 
-        // In stack trace ra console để debug
-        ex.printStackTrace();
-        String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+        // Log error for debugging (use proper logging framework in production)
+        // TODO: Replace with SLF4J logger in production
+        System.err.println("Internal Server Error: " + ex.getClass().getName() + " - " + ex.getMessage());
+        
+        // Don't expose internal error details to client in production
+        String message = "Internal server error occurred. Please try again later.";
         return ResponseEntity.status(500)
                 .body(buildResponse(500, message, request.getRequestURI()));
     }

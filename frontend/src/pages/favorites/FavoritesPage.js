@@ -58,6 +58,7 @@ const FavoritesPage = () => {
             return {
               id: product.id,
               variantId: product.variantId || catalogProduct.variantId,
+              defaultVariantId: product.defaultVariantId || catalogProduct.defaultVariantId,
               name: catalogProduct.name || product.name,
               slug: catalogProduct.slug || product.slug,
               image,
@@ -96,11 +97,16 @@ const FavoritesPage = () => {
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
     e.preventDefault();
-    const variantId = product.defaultVariantId || product.variantId || product.id;
+    const variantId = product.variantId || product.defaultVariantId;
+    if (!variantId) {
+      addToast("Sản phẩm chưa có phân loại để thêm vào giỏ hàng", "error");
+      return;
+    }
     addToCart(
       {
         id: variantId,
-        variantId: variantId,
+        productId: product.id,
+        variantId,
         name: product.name,
         slug: product.slug,
         image: product.image,

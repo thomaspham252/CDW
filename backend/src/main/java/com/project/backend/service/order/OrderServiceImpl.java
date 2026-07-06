@@ -377,7 +377,7 @@ public class OrderServiceImpl implements OrderService {
             vnpParams.put("vnp_ReturnUrl", vnpayConfig.getReturnUrl());
             vnpParams.put("vnp_IpAddr", VNPayConfig.getIpAddress(servletRequest));
 
-            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
             vnpParams.put("vnp_CreateDate", formatter.format(calendar.getTime()));
 
@@ -391,7 +391,9 @@ public class OrderServiceImpl implements OrderService {
                     if (hashData.length() > 0) {
                         hashData.append('&');
                     }
-                    hashData.append(fieldName).append('=').append(VNPayConfig.urlEncode(fieldValue));
+                    hashData.append(fieldName)
+                            .append('=')
+                            .append(VNPayConfig.urlEncode(fieldValue));
 
                     if (query.length() > 0) {
                         query.append('&');
