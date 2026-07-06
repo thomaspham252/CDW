@@ -11,6 +11,7 @@ export const useProductDetailPage = (id) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const userId = user?.id || user?.userId;
   const { addToast } = useToast();
 
   const [product, setProduct] = useState(null);
@@ -126,7 +127,7 @@ export const useProductDetailPage = (id) => {
             mappedProduct.images[0] ||
             "https://placehold.co/600x600?text=No+Image",
         );
-        setIsFavorite(user ? favoritesAPI.isFavorite(data.id, user.id) : false);
+        setIsFavorite(userId ? favoritesAPI.isFavorite(data.id, userId) : false);
 
         if (mappedProduct.colors && mappedProduct.colors.length > 0)
           setSelectedColor(mappedProduct.colors[0]);
@@ -218,9 +219,9 @@ export const useProductDetailPage = (id) => {
         },
         quantity,
       );
-      if (user)
+      if (userId)
         await notificationsAPI.create(
-          user.id,
+          userId,
           "order",
           `Đã thêm sản phẩm ${product.name} vào giỏ hàng`,
         );
@@ -265,17 +266,17 @@ export const useProductDetailPage = (id) => {
     }
     try {
       if (isFavorite) {
-        await favoritesAPI.removeFromFavorites(product.id, user.id);
+        await favoritesAPI.removeFromFavorites(product.id, userId);
         await notificationsAPI.create(
-          user.id,
+          userId,
           "system",
           "Đã xóa sản phẩm khỏi yêu thích",
         );
         addToast("Đã xóa khỏi yêu thích", "success");
       } else {
-        await favoritesAPI.addToFavorites(product.id, user.id);
+        await favoritesAPI.addToFavorites(product.id, userId);
         await notificationsAPI.create(
-          user.id,
+          userId,
           "system",
           "Đã thêm sản phẩm vào yêu thích",
         );
@@ -333,9 +334,9 @@ export const useProductDetailPage = (id) => {
         reviewMedia,
         editingReviewId,
       );
-      if (user)
+      if (userId)
         await notificationsAPI.create(
-          user.id,
+          userId,
           "system",
           editingReviewId
             ? "Đã cập nhật đánh giá"
@@ -368,8 +369,8 @@ export const useProductDetailPage = (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) return;
     try {
       await deleteReview(reviewId);
-      if (user)
-        await notificationsAPI.create(user.id, "system", "Đã xóa đánh giá");
+      if (userId)
+        await notificationsAPI.create(userId, "system", "Đã xóa đánh giá");
       addToast("Đã xóa đánh giá", "success");
       setShowReviewForm(false);
       setEditingReviewId(null);

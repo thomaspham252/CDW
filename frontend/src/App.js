@@ -18,6 +18,7 @@ import BlogPage from "./pages/blog/BlogPage";
 import BlogDetailPage from "./pages/blog/BlogDetailPage";
 import ContactPage from "./pages/contact/ContactPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+import FavoritesPage from "./pages/favorites/FavoritesPage";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
                   <Route path="/blog/:slug" element={<BlogDetailPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/favorites" element={<FavoritesPage />} />
                 </Route>
               </Routes>
             </div>

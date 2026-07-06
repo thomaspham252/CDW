@@ -16,8 +16,9 @@ const Header = () => {
 
   useEffect(() => {
     const updateCount = () => {
-      if (user) {
-        setFavoritesCount(favoritesAPI.getCount(user.id));
+      const userId = user?.id || user?.userId;
+      if (userId) {
+        setFavoritesCount(favoritesAPI.getCount(userId));
       } else {
         setFavoritesCount(0);
       }

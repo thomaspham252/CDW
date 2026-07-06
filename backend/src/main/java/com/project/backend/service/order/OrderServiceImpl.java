@@ -15,6 +15,7 @@ import com.project.backend.repository.product.ProductVariantRepository;
 import com.project.backend.repository.product.ProductRepository;
 import com.project.backend.repository.auth.UserRepository;
 import com.project.backend.dto.response.analytics.AnalyticsResponse;
+import com.project.backend.service.async.NotificationAsyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final NotificationAsyncService notificationAsyncService;
 
     @Override
     @Transactional
@@ -86,6 +88,17 @@ public class OrderServiceImpl implements OrderService {
 
         // 3. Lưu đơn hàng (Cascade tự động lưu OrderItems)
         Order savedOrder = orderRepository.save(order);
+
+        // 4. Gửi thông báo bất đồng bộ nền (Asynchronous Task)
+        try {
+            notificationAsyncService.sendOrderNotification(
+                    savedOrder.getId(),
+                    savedOrder.getEmail(),
+                    savedOrder.getTotalAmount()
+            );
+        } catch (Exception e) {
+            System.err.println("[ASYNC TRIGGER ERROR] Không thể kích hoạt thông báo nền: " + e.getMessage());
+        }
 
         return mapToOrderResponse(savedOrder);
     }

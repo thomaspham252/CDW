@@ -1,3 +1,5 @@
+import axiosInstance from './axiosInstance';
+
 const getFavs = (userId) => {
   if (!userId) return [];
   try {
@@ -17,21 +19,39 @@ const saveFavs = (userId, favs) => {
 export const favoritesAPI = {
   getCount: (userId) => getFavs(userId).length,
   isFavorite: (productId, userId) => getFavs(userId).includes(productId),
-  addToFavorites: (productId, userId) => {
-    if (!userId) return Promise.resolve(false);
-    const favs = getFavs(userId);
-    if (!favs.includes(productId)) {
-      favs.push(productId);
-      saveFavs(userId, favs);
+  addToFavorites: async (productId, userId) => {
+    if (!userId) return false;
+    try {
+      const response = await axiosInstance.post(`/api/favorites/toggle/${productId}`);
+      if (response.data.success) {
+        const favs = getFavs(userId);
+        if (!favs.includes(productId)) {
+          favs.push(productId);
+          saveFavs(userId, favs);
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("Lỗi khi thêm yêu thích:", e);
+      return false;
     }
-    return Promise.resolve(true);
   },
-  removeFromFavorites: (productId, userId) => {
-    if (!userId) return Promise.resolve(false);
-    const favs = getFavs(userId);
-    const updated = favs.filter(id => id !== productId);
-    saveFavs(userId, updated);
-    return Promise.resolve(true);
+  removeFromFavorites: async (productId, userId) => {
+    if (!userId) return false;
+    try {
+      const response = await axiosInstance.post(`/api/favorites/toggle/${productId}`);
+      if (response.data.success) {
+        const favs = getFavs(userId);
+        const updated = favs.filter(id => id !== productId);
+        saveFavs(userId, updated);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("Lỗi khi xóa yêu thích:", e);
+      return false;
+    }
   },
 };
 

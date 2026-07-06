@@ -30,7 +30,16 @@ export const AuthProvider = ({ children }) => {
       // exp is in seconds
       if (payload.exp && payload.exp * 1000 > Date.now()) {
         const saved = localStorage.getItem(USER_KEY);
-        setUser(saved ? JSON.parse(saved) : null);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.userId && !parsed.id) {
+            parsed.id = parsed.userId;
+            localStorage.setItem(USER_KEY, JSON.stringify(parsed));
+          }
+          setUser(parsed);
+        } else {
+          setUser(null);
+        }
       } else {
         localStorage.removeItem(USER_KEY);
         localStorage.removeItem("token");
@@ -51,6 +60,7 @@ export const AuthProvider = ({ children }) => {
       email: data.email,
       fullName: data.fullName,
       userId: data.userId,
+      id: data.userId, // Khắc phục lỗi tương thích với các hook dùng user.id
       role: data.role,
       phone: data.phone,
       gender: data.gender,
