@@ -60,4 +60,21 @@ public class OrderController {
     public ResponseEntity<com.project.backend.dto.response.analytics.AnalyticsResponse> getAnalytics() {
         return ResponseEntity.ok(orderService.getAnalytics());
     }
+
+    @GetMapping("/api/admin/analytics/monthly")
+    public ResponseEntity<java.util.List<com.project.backend.dto.response.analytics.MonthlyStatsResponse>> getMonthlyStats(
+            @RequestParam int year) {
+        return ResponseEntity.ok(orderService.getMonthlyStats(year));
+    }
+
+    @GetMapping("/api/admin/analytics/years")
+    public ResponseEntity<java.util.List<Integer>> getAvailableYears() {
+        return ResponseEntity.ok(orderService.getAvailableYears());
+    }
+
+    @GetMapping("/api/admin/analytics/status")
+    public ResponseEntity<java.util.List<com.project.backend.dto.response.analytics.StatusStatsResponse>> getStatusStats(
+            @RequestParam(required = false) Integer year) {
+        return ResponseEntity.ok(orderService.getStatusStats(year));
+    }
 }

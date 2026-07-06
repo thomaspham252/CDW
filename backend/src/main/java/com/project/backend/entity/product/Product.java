@@ -10,10 +10,11 @@ import java.util.Set;
 @Table(name = "products")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
 @Getter
 @Setter
 @Builder
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"variants", "category"})
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

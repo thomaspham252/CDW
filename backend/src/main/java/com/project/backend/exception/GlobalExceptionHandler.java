@@ -65,8 +65,11 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request) {
 
+        // In stack trace ra console để debug
+        ex.printStackTrace();
+        String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
         return ResponseEntity.status(500)
-                .body(buildResponse(500, ex.getMessage(), request.getRequestURI()));
+                .body(buildResponse(500, message, request.getRequestURI()));
     }
 
     private ErrorResponse buildResponse(int status, String message, String path) {

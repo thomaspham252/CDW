@@ -395,6 +395,7 @@ const ProfilePage = () => {
       addToCart(
         {
           id: item.variantId,
+          variantId: item.variantId,
           name: item.productName,
           slug: item.productSlug,
           image: item.imageUrl,
@@ -454,9 +455,6 @@ const ProfilePage = () => {
   const handleAddFavToCart = (product) => {
     addToCart(
       {
-        id: product.variantId || product.id,
-        productId: product.id,
-        variantId: product.variantId,
         name: product.name,
         slug: product.slug,
         image: product.image,

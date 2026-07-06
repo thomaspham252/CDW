@@ -5,13 +5,17 @@ import { FontAwesomeIcon, icons } from '../../utils/icons';
 import { formatPrice } from '../../utils/formatPrice';
 import api from '../../services/axiosInstance';
 import AdminProductForm from './AdminProductForm';
+import AdminAnalytics from './AdminAnalytics';
+import AdminVouchers from './AdminVouchers';
+import AdminMembers from './AdminMembers';
+import AdminInventory from './AdminInventory';
 import '../../styles/admin/AdminDashboard.css';
 
 const AdminDashboard = () => {
     const { user, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
-    const [activeTab, setActiveTab] = useState('analytics'); // analytics, products, orders
+    const [activeTab, setActiveTab] = useState('analytics'); // analytics, products, orders, vouchers, members, inventory
     
     // States for analytics
     const [analytics, setAnalytics] = useState(null);
@@ -39,8 +43,14 @@ const AdminDashboard = () => {
             navigate('/login?redirect=admin');
             return;
         }
-        if (user && user.role?.toUpperCase() !== 'ADMIN') {
-            navigate('/');
+        if (user) {
+            const roleUpper = user.role?.toUpperCase();
+            if (roleUpper !== 'ADMIN' && roleUpper !== 'STAFF') {
+                navigate('/');
+            } else if (roleUpper === 'STAFF') {
+                // Nếu là STAFF, mặc định sang tab sản phẩm vì không có quyền xem analytics
+                setActiveTab('products');
+            }
         }
     }, [user, isAuthenticated, navigate]);
 
@@ -102,6 +112,13 @@ const AdminDashboard = () => {
     useEffect(() => {
         setError('');
         setSuccessMessage('');
+
+        const roleUpper = user?.role?.toUpperCase();
+        if (roleUpper === 'STAFF' && (activeTab === 'analytics' || activeTab === 'members')) {
+            setActiveTab('products');
+            return;
+        }
+
         if (activeTab === 'analytics') {
             fetchAnalytics();
         } else if (activeTab === 'products') {
@@ -110,7 +127,7 @@ const AdminDashboard = () => {
         } else if (activeTab === 'orders') {
             fetchOrders();
         }
-    }, [activeTab]);
+    }, [activeTab, user]);
 
     // Toggle product active status
     const handleToggleActive = async (id, currentStatus) => {
@@ -179,12 +196,14 @@ const AdminDashboard = () => {
                     <span>Hệ thống quản trị</span>
                 </div>
                 <div className="admin-menu">
-                    <button 
-                        className={`menu-item ${activeTab === 'analytics' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('analytics')}
-                    >
-                        <FontAwesomeIcon icon={icons.home} className="menu-icon" /> Thống kê doanh số
-                    </button>
+                    {user?.role?.toUpperCase() === 'ADMIN' && (
+                        <button 
+                            className={`menu-item ${activeTab === 'analytics' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('analytics')}
+                        >
+                            <FontAwesomeIcon icon={icons.home} className="menu-icon" /> Thống kê doanh số
+                        </button>
+                    )}
                     <button 
                         className={`menu-item ${activeTab === 'products' ? 'active' : ''}`}
                         onClick={() => setActiveTab('products')}
@@ -197,6 +216,26 @@ const AdminDashboard = () => {
                     >
                         <FontAwesomeIcon icon={icons.shoppingBag} className="menu-icon" /> Quản lý đơn hàng
                     </button>
+                    <button 
+                        className={`menu-item ${activeTab === 'vouchers' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('vouchers')}
+                    >
+                        <FontAwesomeIcon icon={icons.ticket} className="menu-icon" /> Quản lý Voucher
+                    </button>
+                    <button 
+                        className={`menu-item ${activeTab === 'inventory' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('inventory')}
+                    >
+                        <FontAwesomeIcon icon={icons.truck} className="menu-icon" /> Quản lý kho hàng
+                    </button>
+                    {user?.role?.toUpperCase() === 'ADMIN' && (
+                        <button 
+                            className={`menu-item ${activeTab === 'members' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('members')}
+                        >
+                            <FontAwesomeIcon icon={icons.user} className="menu-icon" /> Quản lý thành viên
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -207,6 +246,9 @@ const AdminDashboard = () => {
                             {activeTab === 'analytics' && 'Báo cáo thống kê'}
                             {activeTab === 'products' && 'Danh sách sản phẩm'}
                             {activeTab === 'orders' && 'Danh sách đơn hàng'}
+                            {activeTab === 'vouchers' && 'Quản lý mã Voucher'}
+                            {activeTab === 'members' && 'Danh sách thành viên'}
+                            {activeTab === 'inventory' && 'Quản lý kho hàng'}
                         </h1>
                     </div>
                     <div className="admin-user-info">
@@ -223,54 +265,7 @@ const AdminDashboard = () => {
                         {analyticsLoading ? (
                             <div className="admin-loading-spinner">Đang tải dữ liệu báo cáo...</div>
                         ) : (
-                            <>
-                                <div className="analytics-cards-grid">
-                                    <div className="analytics-card card-revenue">
-                                        <div className="card-info">
-                                            <h3>Tổng doanh thu</h3>
-                                            <span className="card-number">{formatPrice(analytics?.totalRevenue || 0)}</span>
-                                        </div>
-                                        <div className="card-icon-wrapper">
-                                            <FontAwesomeIcon icon={icons.tag} />
-                                        </div>
-                                    </div>
-
-                                    <div className="analytics-card card-orders">
-                                        <div className="card-info">
-                                            <h3>Tổng số đơn hàng</h3>
-                                            <span className="card-number">{analytics?.totalOrders || 0} đơn</span>
-                                        </div>
-                                        <div className="card-icon-wrapper">
-                                            <FontAwesomeIcon icon={icons.shoppingBag} />
-                                        </div>
-                                    </div>
-
-                                    <div className="analytics-card card-products">
-                                        <div className="card-info">
-                                            <h3>Số lượng sản phẩm</h3>
-                                            <span className="card-number">{analytics?.totalProducts || 0} sản phẩm</span>
-                                        </div>
-                                        <div className="card-icon-wrapper">
-                                            <FontAwesomeIcon icon={icons.products} />
-                                        </div>
-                                    </div>
-
-                                    <div className="analytics-card card-customers">
-                                        <div className="card-info">
-                                            <h3>Khách hàng thành viên</h3>
-                                            <span className="card-number">{analytics?.totalCustomers || 0} thành viên</span>
-                                        </div>
-                                        <div className="card-icon-wrapper">
-                                            <FontAwesomeIcon icon={icons.user} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="recent-activity-panel">
-                                    <h2>Tổng quan vận hành</h2>
-                                    <p>Ứng dụng chạy tốt trên các dịch vụ cơ sở dữ liệu và API đã cấu hình.</p>
-                                </div>
-                            </>
+                            <AdminAnalytics summary={analytics} />
                         )}
                     </div>
                 )}
@@ -434,6 +429,21 @@ const AdminDashboard = () => {
                             </div>
                         )}
                     </div>
+                )}
+
+                {/* TAB 4: VOUCHERS */}
+                {activeTab === 'vouchers' && (
+                    <AdminVouchers />
+                )}
+
+                {/* TAB 5: MEMBERS */}
+                {activeTab === 'members' && (
+                    <AdminMembers />
+                )}
+
+                {/* TAB 6: INVENTORY */}
+                {activeTab === 'inventory' && (
+                    <AdminInventory />
                 )}
             </div>
 

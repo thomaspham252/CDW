@@ -30,7 +30,8 @@ export const useProducts = () => {
           category: p.categoryName || "Chưa phân loại",
           rating: 5,
           reviews: 0,
-          stock: 10,
+          stock: p.stock !== null && p.stock !== undefined ? p.stock : 0,
+          defaultVariantId: p.defaultVariantId,
         }));
 
         setProducts(mappedProducts);

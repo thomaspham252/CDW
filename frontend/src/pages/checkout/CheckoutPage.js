@@ -284,7 +284,7 @@ const CheckoutPage = () => {
 
         // Map cart items to backend format
         const items = cart.map(item => ({
-            variantId: item.id, // item.id contains variantId in cart
+            variantId: item.variantId || item.id,
             quantity: item.quantity
         }));
 
