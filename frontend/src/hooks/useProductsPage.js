@@ -206,6 +206,8 @@ export const useProductsPage = () => {
 
       addToCart(
         {
+          id: product.defaultVariantId || product.variantId || product.id,
+          variantId: product.defaultVariantId || product.variantId || product.id,
           name: product.name,
           slug: product.slug,
           image: product.image,
