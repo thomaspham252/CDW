@@ -15,6 +15,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @EntityGraph(attributePaths = {"variants", "variants.images", "category"})
     Optional<Product> findBySlug(String slug);
     boolean existsBySlug(String slug);
+    boolean existsBySlugAndIdNot(String slug, Integer id);
     @EntityGraph(attributePaths = {"variants", "variants.images", "category"})
     Page<Product> findAllByIsActive(Boolean isActive, Pageable pageable);
 

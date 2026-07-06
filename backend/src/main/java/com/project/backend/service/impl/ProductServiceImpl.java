@@ -84,7 +84,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = findProductById(id);
 
         // Rule 1: slug duy nhất khi đổi sang slug khác
-        validator.requireSlugUniqueForUpdate(req.getSlug(), product.getSlug(), productRepo);
+        validator.requireSlugUniqueForUpdate(req.getSlug(), id, productRepo);
 
         // Lookup category mới
         Category category = categoryRepo.findById(req.getCategoryId())
@@ -207,9 +207,45 @@ public class ProductServiceImpl implements ProductService {
         variant.setBasePrice(BigDecimal.valueOf(req.getBasePrice()));
         variant.setSize(req.getSize());
         variant.setColor(req.getColor());
+        if (req.getStock() != null) {
+            variant.setStock(req.getStock());
+        }
 
         variant = variantRepo.save(variant);
-        return mapper.toVariantResponse(variant);
+
+        if (req.getImage() != null) {
+            String newImageUrl = req.getImage().getImage();
+            if (newImageUrl != null && !newImageUrl.isBlank()) {
+                List<ProductImage> imgs = imageRepo.findAllByProductVariantId(variantId);
+                ProductImage mainImg = imgs.stream()
+                        .filter(img -> Boolean.TRUE.equals(img.getIsMain()))
+                        .findFirst()
+                        .orElse(null);
+                if (mainImg != null) {
+                    mainImg.setImgUrl(newImageUrl);
+                    imageRepo.save(mainImg);
+                } else if (!imgs.isEmpty()) {
+                    // Nếu không có ảnh isMain, lấy ảnh đầu tiên và set làm main
+                    ProductImage firstImg = imgs.get(0);
+                    firstImg.setImgUrl(newImageUrl);
+                    firstImg.setIsMain(true);
+                    imageRepo.save(firstImg);
+                } else {
+                    // Không có ảnh nào, tạo mới
+                    ProductImage newImg = new ProductImage();
+                    newImg.setImgUrl(newImageUrl);
+                    newImg.setIsMain(true);
+                    newImg.setProductVariant(variant);
+                    imageRepo.save(newImg);
+                }
+            }
+        }
+
+        // Re-fetch variant to get updated images (avoid LazyInitializationException)
+        ProductVariant updatedVariant = variantRepo.findById(variantId)
+                .orElse(variant);
+
+        return mapper.toVariantResponse(updatedVariant);
     }
 
     /**
@@ -337,8 +373,8 @@ public class ProductServiceImpl implements ProductService {
      * Gọi trước khi đặt ảnh chính mới để đảm bảo chỉ có 1 ảnh chính mỗi variant.
      */
     private void resetMainImage(ProductVariant variant) {
-        if (variant.getImages() == null) return;
-        for (ProductImage img : variant.getImages()) {
+        List<ProductImage> imgs = imageRepo.findAllByProductVariantId(variant.getId());
+        for (ProductImage img : imgs) {
             if (Boolean.TRUE.equals(img.getIsMain())) {
                 img.setIsMain(false);
                 imageRepo.save(img);

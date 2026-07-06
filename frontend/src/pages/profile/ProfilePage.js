@@ -147,6 +147,7 @@ const ProfilePage = () => {
           image: p.mainUrl || p.imgUrl || p.img_url || "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
           category: p.categoryName || "Chưa phân loại",
+          defaultVariantId: p.defaultVariantId,
         }))
         .filter((p) => favIds.includes(p.id));
 
@@ -395,6 +396,7 @@ const ProfilePage = () => {
       addToCart(
         {
           id: item.variantId,
+          variantId: item.variantId,
           name: item.productName,
           slug: item.productSlug,
           image: item.imageUrl,
@@ -422,6 +424,7 @@ const ProfilePage = () => {
     addToCart(
       {
         id: product.id,
+        variantId: product.defaultVariantId || product.id,
         name: product.name,
         slug: product.slug,
         image: product.image,

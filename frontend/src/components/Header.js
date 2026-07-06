@@ -105,7 +105,7 @@ const Header = () => {
 
           {authLoaded && isAuthenticated ? (
             <div className="user-menu">
-              {user?.role?.toUpperCase() === 'ADMIN' && (
+              {(user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'STAFF') && (
                 <Link to="/admin" className="nav-link">
                   Quản trị
                 </Link>
@@ -192,7 +192,7 @@ const Header = () => {
         )}
         {authLoaded && isAuthenticated ? (
           <>
-            {user?.role?.toUpperCase() === 'ADMIN' && (
+            {(user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'STAFF') && (
               <Link
                 to="/admin"
                 className="mobile-nav-link"

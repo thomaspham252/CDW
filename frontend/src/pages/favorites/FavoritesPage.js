@@ -79,6 +79,7 @@ const FavoritesPage = () => {
     addToCart(
       {
         id: product.id,
+        variantId: product.defaultVariantId || product.id,
         name: product.name,
         slug: product.slug,
         image: product.image,

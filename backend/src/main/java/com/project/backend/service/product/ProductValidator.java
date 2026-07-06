@@ -33,9 +33,9 @@ public class ProductValidator {
      * @param newSlug     slug mới client gửi lên
      * @param currentSlug slug hiện tại của sản phẩm trong DB
      */
-    public void requireSlugUniqueForUpdate(String newSlug, String currentSlug,
+    public void requireSlugUniqueForUpdate(String newSlug, Integer id,
                                            ProductRepository productRepo) {
-        if (!newSlug.equals(currentSlug) && productRepo.existsBySlug(newSlug)) {
+        if (productRepo.existsBySlugAndIdNot(newSlug, id)) {
             throw new BadRequestException("Slug '" + newSlug + "' đã được dùng bởi sản phẩm khác");
         }
     }

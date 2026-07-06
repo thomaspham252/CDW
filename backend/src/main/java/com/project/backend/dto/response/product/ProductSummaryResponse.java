@@ -18,4 +18,6 @@ public class ProductSummaryResponse {
     private BigDecimal basePrice;
     private Boolean isActive;
     private String categoryName;
+    private Integer stock;
+    private Integer defaultVariantId;
 }

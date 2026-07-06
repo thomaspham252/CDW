@@ -19,6 +19,8 @@ public class VariantUpsertRequest {
 
     private String color; // tuỳ chọn (ví dụ: "Đỏ", "Nâu")
 
+    private Integer stock = 50; // mặc định 50 nếu không điền khi tạo mới
+
     @Valid // cascade validate sang ImageUpsertRequest
     private ImageUpsertRequest image;
 }

@@ -43,7 +43,8 @@ export const useHomePage = () => {
           category: p.categoryName || "Chưa phân loại",
           rating: 5,
           reviews: 0,
-          stock: 10,
+          stock: p.stock !== null && p.stock !== undefined ? p.stock : 0,
+          defaultVariantId: p.defaultVariantId,
         }));
 
         setProducts(mappedProducts);
@@ -79,6 +80,7 @@ export const useHomePage = () => {
     addToCart(
       {
         id: product.id,
+        variantId: product.defaultVariantId || product.id,
         name: product.name,
         slug: product.slug,
         image: product.image,

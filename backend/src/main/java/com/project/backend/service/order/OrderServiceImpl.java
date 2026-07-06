@@ -15,6 +15,8 @@ import com.project.backend.repository.product.ProductVariantRepository;
 import com.project.backend.repository.product.ProductRepository;
 import com.project.backend.repository.auth.UserRepository;
 import com.project.backend.dto.response.analytics.AnalyticsResponse;
+import com.project.backend.dto.response.analytics.MonthlyStatsResponse;
+import com.project.backend.dto.response.analytics.StatusStatsResponse;
 import com.project.backend.config.VNPayConfig;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -69,6 +71,19 @@ public class OrderServiceImpl implements OrderService {
         for (OrderItemRequest itemReq : request.getItems()) {
             ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
                     .orElseThrow(() -> new IllegalArgumentException("Product variant not found: " + itemReq.getVariantId()));
+
+            // Kiểm tra tồn kho
+            if (variant.getStock() < itemReq.getQuantity()) {
+                throw new com.project.backend.exception.BadRequestException(
+                    "Sản phẩm '" + variant.getProduct().getName() + 
+                    " (" + (variant.getColor() != null ? variant.getColor() + ", " : "") + variant.getSize() + ")' chỉ còn " + 
+                    variant.getStock() + " sản phẩm trong kho."
+                );
+            }
+
+            // Trừ tồn kho
+            variant.setStock(variant.getStock() - itemReq.getQuantity());
+            productVariantRepository.save(variant);
 
             BigDecimal itemPrice = variant.getPrice();
             BigDecimal quantityDec = BigDecimal.valueOf(itemReq.getQuantity());
@@ -232,6 +247,33 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse updateOrderStatus(Integer id, String status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with id: " + id));
+
+        String oldStatus = order.getStatus();
+
+        // 1. Trả lại kho nếu huỷ đơn (chuyển sang 'cancelled' từ trạng thái khác)
+        if (!"cancelled".equalsIgnoreCase(oldStatus) && "cancelled".equalsIgnoreCase(status)) {
+            for (OrderItem item : order.getItems()) {
+                ProductVariant variant = item.getProductVariant();
+                variant.setStock(variant.getStock() + item.getQuantity());
+                productVariantRepository.save(variant);
+            }
+        }
+
+        // 2. Trừ kho nếu khôi phục đơn (chuyển từ 'cancelled' sang trạng thái khác)
+        if ("cancelled".equalsIgnoreCase(oldStatus) && !"cancelled".equalsIgnoreCase(status)) {
+            for (OrderItem item : order.getItems()) {
+                ProductVariant variant = item.getProductVariant();
+                if (variant.getStock() < item.getQuantity()) {
+                    throw new com.project.backend.exception.BadRequestException(
+                        "Không thể khôi phục đơn hàng. Sản phẩm '" + variant.getProduct().getName() + 
+                        " (" + variant.getSize() + ")' không đủ số lượng trong kho."
+                    );
+                }
+                variant.setStock(variant.getStock() - item.getQuantity());
+                productVariantRepository.save(variant);
+            }
+        }
+
         order.setStatus(status);
         Order updatedOrder = orderRepository.save(order);
         return mapToOrderResponse(updatedOrder);
@@ -256,5 +298,51 @@ public class OrderServiceImpl implements OrderService {
                 .totalProducts(totalProducts)
                 .totalCustomers(totalCustomers)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MonthlyStatsResponse> getMonthlyStats(int year) {
+        List<Object[]> rows = orderRepository.findMonthlyStatsByYear(year);
+        List<MonthlyStatsResponse> result = new ArrayList<>();
+        // Build a map from DB rows
+        java.util.Map<Integer, MonthlyStatsResponse> map = new java.util.LinkedHashMap<>();
+        for (Object[] row : rows) {
+            int month = ((Number) row[0]).intValue();
+            BigDecimal revenue = row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO;
+            long totalOrders = ((Number) row[2]).longValue();
+            long cancelledOrders = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+            map.put(month, new MonthlyStatsResponse(year, month, revenue, totalOrders, cancelledOrders));
+        }
+        // Fill all 12 months (missing = 0)
+        for (int m = 1; m <= 12; m++) {
+            result.add(map.getOrDefault(m, new MonthlyStatsResponse(year, m, BigDecimal.ZERO, 0L, 0L)));
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Integer> getAvailableYears() {
+        List<Integer> years = orderRepository.findDistinctYears();
+        if (years == null || years.isEmpty()) {
+            years = new ArrayList<>();
+            years.add(java.time.LocalDateTime.now().getYear());
+        }
+        return years;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StatusStatsResponse> getStatusStats(Integer year) {
+        List<Object[]> rows = orderRepository.findOrderStatusStats(year);
+        List<StatusStatsResponse> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            String status = (String) row[0];
+            long count = ((Number) row[1]).longValue();
+            BigDecimal revenue = row[2] != null ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO;
+            result.add(new StatusStatsResponse(status, count, revenue));
+        }
+        return result;
     }
 }

@@ -103,7 +103,8 @@ export const useProductsPage = () => {
           category: p.categoryName || "Chưa phân loại",
           rating: 5, // Backend chưa có rating
           reviews: 0, // Backend chưa có reviews
-          stock: 10, // Backend chưa có stock
+          stock: p.stock !== null && p.stock !== undefined ? p.stock : 0,
+          defaultVariantId: p.defaultVariantId,
           description: "",
         }));
 
@@ -237,6 +238,7 @@ export const useProductsPage = () => {
       addToCart(
         {
           id: product.id,
+          variantId: product.defaultVariantId || product.id,
           name: product.name,
           slug: product.slug,
           image: product.image,
