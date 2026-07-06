@@ -9,7 +9,7 @@ import {
 const AuthContext = createContext(null);
 
 // Lưu user info vào localStorage để giữ sau reload
-const USER_KEY = "tth_user";
+const USER_KEY = "cdw_user";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

@@ -8,7 +8,6 @@ import api from '../../services/axiosInstance';
 import addressService from '../../services/addressService';
 import {
     BANK_TRANSFER_CONFIG,
-    getShippingFee,
     getTransferContent,
     getVietQrImageUrl
 } from '../../config/paymentConfig';
@@ -35,13 +34,23 @@ const CheckoutPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [orderSuccess, setOrderSuccess] = useState(null); // stores created order response
+    const [couponCode, setCouponCode] = useState('');
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponError, setCouponError] = useState('');
+    const [availableCoupons, setAvailableCoupons] = useState([]);
+    const [shippingFee, setShippingFee] = useState(35000);
+    const [shippingLoading, setShippingLoading] = useState(false);
+    const [shippingFallback, setShippingFallback] = useState(false);
     const [provinces, setProvinces] = useState([]);
     const [districts, setDistricts] = useState([]);
     const [wards, setWards] = useState([]);
     const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
     const [selectedDistrictCode, setSelectedDistrictCode] = useState('');
+    const [selectedWardCode, setSelectedWardCode] = useState('');
     const [addressLoading, setAddressLoading] = useState(false);
     const [addressError, setAddressError] = useState('');
+    const subtotal = getTotalPrice();
+    const finalTotal = subtotal + shippingFee - couponDiscount;
 
     // Pre-fill form if user is authenticated
     useEffect(() => {
@@ -134,6 +143,61 @@ const CheckoutPage = () => {
         loadWards();
     }, [selectedDistrictCode]);
 
+    useEffect(() => {
+        const loadAvailableCoupons = async () => {
+            try {
+                const response = await api.get('/api/coupons/available', {
+                    params: { subtotal }
+                });
+                const coupons = response.data || [];
+                setAvailableCoupons(coupons);
+
+                if (couponCode && !coupons.some((coupon) => coupon.code === couponCode)) {
+                    setCouponCode('');
+                    setCouponDiscount(0);
+                }
+            } catch (err) {
+                console.error('Error loading coupons:', err);
+                setAvailableCoupons([]);
+            }
+        };
+
+        loadAvailableCoupons();
+    }, [subtotal, couponCode]);
+
+    useEffect(() => {
+        const calculateShippingFee = async () => {
+            if (!selectedDistrictCode || !selectedWardCode) {
+                setShippingFee(subtotal >= 500000 ? 0 : 35000);
+                setShippingFallback(true);
+                return;
+            }
+
+            try {
+                setShippingLoading(true);
+                const response = await api.post('/api/shipping/fee', {
+                    toDistrictId: Number(selectedDistrictCode),
+                    toWardCode: selectedWardCode,
+                    insuranceValue: subtotal,
+                    items: cart.map(item => ({
+                        variantId: item.id,
+                        quantity: item.quantity
+                    }))
+                });
+                setShippingFee(Number(response.data?.fee || 0));
+                setShippingFallback(Boolean(response.data?.fallback));
+            } catch (err) {
+                console.error('Error calculating shipping fee:', err);
+                setShippingFee(subtotal >= 500000 ? 0 : 35000);
+                setShippingFallback(true);
+            } finally {
+                setShippingLoading(false);
+            }
+        };
+
+        calculateShippingFee();
+    }, [selectedDistrictCode, selectedWardCode, subtotal, cart]);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -148,6 +212,7 @@ const CheckoutPage = () => {
 
         setSelectedProvinceCode(selectedCode);
         setSelectedDistrictCode('');
+        setSelectedWardCode('');
         setWards([]);
         setFormData(prev => ({
             ...prev,
@@ -162,6 +227,7 @@ const CheckoutPage = () => {
         const selectedDistrict = districts.find((item) => String(item.code) === selectedCode);
 
         setSelectedDistrictCode(selectedCode);
+        setSelectedWardCode('');
         setFormData(prev => ({
             ...prev,
             district: selectedDistrict?.name || '',
@@ -173,14 +239,37 @@ const CheckoutPage = () => {
         const selectedCode = e.target.value;
         const selectedWard = wards.find((item) => String(item.code) === selectedCode);
 
+        setSelectedWardCode(selectedCode);
         setFormData(prev => ({
             ...prev,
             ward: selectedWard?.name || ''
         }));
     };
 
-    const shippingFee = getShippingFee(getTotalPrice());
-    const finalTotal = getTotalPrice() + shippingFee;
+    const handleApplyCoupon = () => {
+        setCouponError('');
+        
+        if (!couponCode) {
+            setCouponError('Vui lòng chọn mã giảm giá');
+            return;
+        }
+
+        const coupon = availableCoupons.find((item) => item.code === couponCode);
+        
+        if (coupon) {
+            setCouponDiscount(Number(coupon.discountValue || 0));
+            setCouponError(''); // Clear error
+        } else {
+            setCouponError('Mã giảm giá chưa đủ điều kiện áp dụng');
+            setCouponDiscount(0);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setCouponCode('');
+        setCouponDiscount(0);
+        setCouponError('');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -201,7 +290,11 @@ const CheckoutPage = () => {
 
         const orderPayload = {
             ...formData,
+            provinceId: selectedProvinceCode ? Number(selectedProvinceCode) : null,
+            districtId: selectedDistrictCode ? Number(selectedDistrictCode) : null,
+            wardCode: selectedWardCode || null,
             paymentMethod,
+            couponCode: couponDiscount > 0 ? couponCode : null,
             items
         };
 
@@ -423,7 +516,7 @@ const CheckoutPage = () => {
                             <div className="form-group">
                                 <label>Phường/Xã *</label>
                                 <select
-                                    value={wards.find((ward) => ward.name === formData.ward)?.code || ''}
+                                    value={selectedWardCode}
                                     onChange={handleWardChange}
                                     disabled={!selectedDistrictCode || addressLoading}
                                     required
@@ -438,51 +531,84 @@ const CheckoutPage = () => {
                             </div>
                         </div>
 
-                        <div className="payment-method-section">
-                            <h2>Phương thức thanh toán</h2>
+                        <div className="shipping-method-section">
+                            <h2>Đơn vị vận chuyển</h2>
+                            <div className="shipping-option active">
+                                <div className="shipping-icon">
+                                    <FontAwesomeIcon icon={icons.truck} />
+                                </div>
+                                <div className="shipping-info">
+                                    <span className="shipping-title">Giao Hàng Nhanh</span>
+                                    <span className="shipping-desc">
+                                        {shippingFallback ? 'Phí tạm tính - cần cấu hình GHN' : 'Dự kiến giao: 3 - 5 ngày'}
+                                    </span>
+                                </div>
+                                <div className="shipping-fee">
+                                    {shippingLoading ? 'Đang tính...' : (shippingFee === 0 ? 'Miễn phí' : formatPrice(shippingFee))}
+                                </div>
+                            </div>
+                        </div>
 
-                            <div className={`payment-option ${paymentMethod === 'BANK_TRANSFER' ? 'active' : ''}`} onClick={() => setPaymentMethod('BANK_TRANSFER')}>
-                                <input 
-                                    type="radio" 
-                                    id="method-bank" 
-                                    name="paymentMethod" 
-                                    value="BANK_TRANSFER" 
-                                    checked={paymentMethod === 'BANK_TRANSFER'}
-                                    onChange={() => setPaymentMethod('BANK_TRANSFER')}
-                                />
-                                <label htmlFor="method-bank">
-                                    <span className="payment-option-title">Chuyển khoản ngân hàng</span>
-                                    <span className="payment-option-desc">Chuyển khoản qua mã QR VietQR hoặc ứng dụng ngân hàng của bạn.</span>
+                        <div className="payment-method-section">
+                            <h2>Thanh toán</h2>
+
+                            <div className={`payment-option ${paymentMethod === 'COD' ? 'active' : ''}`} onClick={() => setPaymentMethod('COD')}>
+                                <div className="payment-radio">
+                                    <input 
+                                        type="radio" 
+                                        id="method-cod" 
+                                        name="paymentMethod" 
+                                        value="COD" 
+                                        checked={paymentMethod === 'COD'}
+                                        onChange={() => setPaymentMethod('COD')}
+                                    />
+                                </div>
+                                <div className="payment-icon">
+                                    <FontAwesomeIcon icon={icons.moneyBill} />
+                                </div>
+                                <label htmlFor="method-cod">
+                                    <span className="payment-option-title">COD</span>
+                                    <span className="payment-option-desc">Thanh toán khi nhận hàng</span>
                                 </label>
                             </div>
 
-                            <div className={`payment-option ${paymentMethod === 'COD' ? 'active' : ''}`} onClick={() => setPaymentMethod('COD')}>
-                                <input 
-                                    type="radio" 
-                                    id="method-cod" 
-                                    name="paymentMethod" 
-                                    value="COD" 
-                                    checked={paymentMethod === 'COD'}
-                                    onChange={() => setPaymentMethod('COD')}
-                                />
-                                <label htmlFor="method-cod">
-                                    <span className="payment-option-title">Thanh toán khi nhận hàng (COD)</span>
-                                    <span className="payment-option-desc">Thanh toán bằng tiền mặt khi shipper giao hàng đến nơi.</span>
+                            <div className={`payment-option ${paymentMethod === 'BANK_TRANSFER' ? 'active' : ''}`} onClick={() => setPaymentMethod('BANK_TRANSFER')}>
+                                <div className="payment-radio">
+                                    <input 
+                                        type="radio" 
+                                        id="method-qr" 
+                                        name="paymentMethod" 
+                                        value="BANK_TRANSFER" 
+                                        checked={paymentMethod === 'BANK_TRANSFER'}
+                                        onChange={() => setPaymentMethod('BANK_TRANSFER')}
+                                    />
+                                </div>
+                                <div className="payment-icon">
+                                    <FontAwesomeIcon icon={icons.qrcode} />
+                                </div>
+                                <label htmlFor="method-qr">
+                                    <span className="payment-option-title">QR</span>
+                                    <span className="payment-option-desc">Quét mã QR VietQR</span>
                                 </label>
                             </div>
 
                             <div className={`payment-option ${paymentMethod === 'VNPAY' ? 'active' : ''}`} onClick={() => setPaymentMethod('VNPAY')}>
-                                <input 
-                                    type="radio" 
-                                    id="method-vnpay" 
-                                    name="paymentMethod" 
-                                    value="VNPAY" 
-                                    checked={paymentMethod === 'VNPAY'}
-                                    onChange={() => setPaymentMethod('VNPAY')}
-                                />
+                                <div className="payment-radio">
+                                    <input 
+                                        type="radio" 
+                                        id="method-vnpay" 
+                                        name="paymentMethod" 
+                                        value="VNPAY" 
+                                        checked={paymentMethod === 'VNPAY'}
+                                        onChange={() => setPaymentMethod('VNPAY')}
+                                    />
+                                </div>
+                                <div className="payment-icon vnpay">
+                                    <FontAwesomeIcon icon={icons.creditCard} />
+                                </div>
                                 <label htmlFor="method-vnpay">
-                                    <span className="payment-option-title">Thanh toán qua VNPAY</span>
-                                    <span className="payment-option-desc">Thanh toán trực tuyến an toàn qua cổng thanh toán VNPAY (ATM, Thẻ quốc tế, QR).</span>
+                                    <span className="payment-option-title">VNPAY</span>
+                                    <span className="payment-option-desc">Thanh toán qua cổng VNPAY</span>
                                 </label>
                             </div>
                         </div>
@@ -518,8 +644,14 @@ const CheckoutPage = () => {
                             </div>
                             <div className="calc-row">
                                 <span>Phí giao hàng:</span>
-                                <span>{shippingFee === 0 ? 'Miễn phí' : formatPrice(shippingFee)}</span>
+                                <span>{shippingLoading ? 'Đang tính...' : (shippingFee === 0 ? 'Miễn phí' : formatPrice(shippingFee))}</span>
                             </div>
+                            {couponDiscount > 0 && (
+                                <div className="calc-row coupon-discount-row">
+                                    <span>Giảm giá ({couponCode}):</span>
+                                    <span className="discount-amount">-{formatPrice(couponDiscount)}</span>
+                                </div>
+                            )}
                             <div className="calc-divider" />
                             <div className="calc-row total-amount-row">
                                 <span>Tổng thanh toán:</span>
@@ -527,10 +659,61 @@ const CheckoutPage = () => {
                             </div>
                         </div>
 
+                        <div className="coupon-section">
+                            <div className="coupon-input-wrapper">
+                                <select
+                                    className="coupon-input"
+                                    value={couponCode}
+                                    onChange={(e) => {
+                                        setCouponCode(e.target.value);
+                                        setCouponDiscount(0);
+                                        setCouponError('');
+                                    }}
+                                    disabled={couponDiscount > 0}
+                                >
+                                    <option value="">
+                                        {availableCoupons.length > 0 ? 'Chọn mã giảm giá' : 'Chưa có voucher phù hợp'}
+                                    </option>
+                                    {availableCoupons.map((coupon) => (
+                                        <option key={coupon.code} value={coupon.code}>
+                                            {coupon.code} - Giảm {formatPrice(coupon.discountValue || 0)}
+                                        </option>
+                                    ))}
+                                </select>
+                                {couponDiscount > 0 ? (
+                                    <button 
+                                        type="button" 
+                                        className="btn-remove-coupon"
+                                        onClick={handleRemoveCoupon}
+                                    >
+                                        <FontAwesomeIcon icon={icons.times} />
+                                    </button>
+                                ) : (
+                                    <button 
+                                        type="button" 
+                                        className="btn-apply-coupon"
+                                        onClick={handleApplyCoupon}
+                                    >
+                                        Áp dụng
+                                    </button>
+                                )}
+                            </div>
+                            {couponError && (
+                                <div className="coupon-error">
+                                    <FontAwesomeIcon icon={icons.warning} /> {couponError}
+                                </div>
+                            )}
+                            {couponDiscount > 0 && (
+                                <div className="coupon-success">
+                                    <FontAwesomeIcon icon={icons.checkCircle} /> Mã giảm giá đã được áp dụng!
+                                </div>
+                            )}
+                        </div>
+
                         <button 
                             type="submit" 
                             className="btn-place-order" 
-                            disabled={loading}
+                            disabled={loading || shippingLoading}
                         >
                             {loading ? (
                                 <span>Đang xử lý...</span>

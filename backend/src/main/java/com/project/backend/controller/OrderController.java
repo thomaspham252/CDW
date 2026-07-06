@@ -48,6 +48,14 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/api/admin/orders/{id}/payment-status")
+    public ResponseEntity<OrderResponse> updatePaymentStatus(
+            @PathVariable Integer id,
+            @RequestParam String value) {
+        OrderResponse response = orderService.updatePaymentStatus(id, value);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/api/admin/analytics")
     public ResponseEntity<com.project.backend.dto.response.analytics.AnalyticsResponse> getAnalytics() {
         return ResponseEntity.ok(orderService.getAnalytics());

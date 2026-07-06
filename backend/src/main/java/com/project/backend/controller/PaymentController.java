@@ -1,14 +1,16 @@
 package com.project.backend.controller;
 
 import com.project.backend.config.VNPayConfig;
+import com.project.backend.dto.response.payment.BankTransferPaymentResponse;
+import com.project.backend.dto.response.payment.PaymentUrlResponse;
+import com.project.backend.entity.auth.User;
 import com.project.backend.service.order.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @RestController
@@ -19,6 +21,20 @@ public class PaymentController {
 
     private final VNPayConfig vnpayConfig;
     private final OrderService orderService;
+
+    @GetMapping("/orders/{orderId}/bank-transfer")
+    public ResponseEntity<BankTransferPaymentResponse> getBankTransferPayment(
+            @PathVariable Integer orderId,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(orderService.getBankTransferPayment(orderId, currentUser));
+    }
+
+    @PostMapping("/orders/{orderId}/vnpay-url")
+    public ResponseEntity<PaymentUrlResponse> createVnPayPaymentUrl(
+            @PathVariable Integer orderId,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(new PaymentUrlResponse(orderService.createVnPayPaymentUrl(orderId, currentUser)));
+    }
 
     @GetMapping("/vnpay-callback")
     public ResponseEntity<?> vnpayCallback(HttpServletRequest request) {
@@ -47,12 +63,11 @@ public class PaymentController {
             for (String fieldName : fieldNames) {
                 String fieldValue = fields.get(fieldName);
                 if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString());
-
+                    // hashData: KHÔNG encode - dùng giá trị gốc để verify chữ ký
                     if (hashData.length() > 0) {
                         hashData.append('&');
                     }
-                    hashData.append(fieldName).append('=').append(encodedValue);
+                    hashData.append(fieldName).append('=').append(fieldValue);
                 }
             }
 
@@ -64,13 +79,13 @@ public class PaymentController {
                 Integer orderId = Integer.parseInt(orderIdStr);
 
                 if ("00".equals(responseCode)) {
-                    orderService.updateOrderStatus(orderId, "PAID");
+                    orderService.markVnPaySuccess(orderId);
                     return ResponseEntity.ok(Map.of(
                         "status", "SUCCESS", 
                         "message", "Thanh toán đơn hàng #" + orderId + " thành công!"
                     ));
                 } else {
-                    orderService.updateOrderStatus(orderId, "FAILED");
+                    orderService.markVnPayFailed(orderId);
                     return ResponseEntity.ok(Map.of(
                         "status", "FAILED", 
                         "message", "Thanh toán thất bại hoặc đã bị hủy. Mã lỗi: " + responseCode

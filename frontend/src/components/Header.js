@@ -25,10 +25,6 @@ const Header = () => {
         setFavoritesCount(await favoritesAPI.getCount());
       } catch (err) {
         console.error("Lỗi tải số lượng yêu thích:", err);
-    const updateCount = () => {
-      if (user) {
-        setFavoritesCount(favoritesAPI.getCount(user.id));
-      } else {
         setFavoritesCount(0);
       }
     };
@@ -39,13 +35,6 @@ const Header = () => {
     return () =>
       window.removeEventListener("wishlist-updated", loadFavoritesCount);
   }, [user, authLoaded, isAuthenticated]);
-    updateCount();
-    window.addEventListener('favorites-updated', updateCount);
-
-    return () => {
-      window.removeEventListener('favorites-updated', updateCount);
-    };
-  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -70,7 +59,7 @@ const Header = () => {
       <div className="header-container">
         {/* Logo */}
         <Link to="/" className="header-logo">
-          <h1>TTH Shop</h1>
+          <h1>CDW Handmade</h1>
           <span className="logo-subtitle">Handmade</span>
         </Link>
 
@@ -121,7 +110,7 @@ const Header = () => {
 
           {authLoaded && isAuthenticated ? (
             <div className="user-menu">
-              {user?.role?.toUpperCase() === 'ADMIN' && (
+              {user?.role?.toUpperCase() === "ADMIN" && (
                 <Link to="/admin" className="nav-link">
                   Quản trị
                 </Link>
@@ -208,7 +197,7 @@ const Header = () => {
         )}
         {authLoaded && isAuthenticated ? (
           <>
-            {user?.role?.toUpperCase() === 'ADMIN' && (
+            {user?.role?.toUpperCase() === "ADMIN" && (
               <Link
                 to="/admin"
                 className="mobile-nav-link"

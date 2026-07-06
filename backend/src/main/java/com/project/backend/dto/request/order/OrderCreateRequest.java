@@ -28,6 +28,9 @@ public class OrderCreateRequest {
     private String ward;
     private String district;
     private String province;
+    private Integer provinceId;
+    private Integer districtId;
+    private String wardCode;
     private String note;
 
     @NotBlank(message = "Payment method cannot be empty")

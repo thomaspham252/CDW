@@ -21,10 +21,16 @@ public class OrderResponse {
     private String province;
     private String note;
     private String paymentMethod;
+    private BigDecimal subtotal;
     private BigDecimal shippingFee;
+    private BigDecimal discountAmount;
     private BigDecimal totalAmount;
     private String couponCode;
     private String status;
+    private String paymentStatus;
+    private String shippingProvider;
+    private Integer ghnDistrictId;
+    private String ghnWardCode;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
     private String paymentUrl;

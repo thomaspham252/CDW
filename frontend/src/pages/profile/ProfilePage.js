@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { FontAwesomeIcon, icons } from "../../utils/icons";
 import { formatPrice } from "../../utils/formatPrice";
 import { updateProfile, changePassword, getMyOrders } from "../../services/auth/authService";
 import { favoritesAPI } from "../../services/api";
+
+// Import Components
+import ProfileSidebar from "../../components/profile/ProfileSidebar";
+import ProfileInfo from "../../components/profile/ProfileInfo";
+import PasswordChange from "../../components/profile/PasswordChange";
+import AddressBook from "../../components/profile/AddressBook";
+import Orders from "../../components/profile/Orders";
+import Favorites from "../../components/profile/Favorites";
+
+// Import Styles
 import "../../styles/profile/Profile.css";
+import "../../styles/profile/OrdersNew.css";
 
 const ProfilePage = () => {
   const { user, isAuthenticated, authLoaded, logout, updateUserLocal } = useAuth();
@@ -54,7 +65,7 @@ const ProfilePage = () => {
   // Address Book State
   const [addresses, setAddresses] = useState([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState(null); // null for new, address object for edit
+  const [editingAddress, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
     name: "",
     phone: "",
@@ -67,7 +78,6 @@ const ProfilePage = () => {
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState("");
-  const [ordersFilter, setOrdersFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
@@ -87,7 +97,7 @@ const ProfilePage = () => {
       setOriginalForm(initialData);
 
       // Load avatar from localStorage
-      const savedAvatar = localStorage.getItem(`tth_avatar_${user.userId}`);
+      const savedAvatar = localStorage.getItem(`cdw_avatar_${user.userId}`);
       if (savedAvatar) {
         setAvatar(savedAvatar);
       } else {
@@ -95,7 +105,7 @@ const ProfilePage = () => {
       }
 
       // Load Address Book
-      const savedAddresses = localStorage.getItem(`tth_addresses_${user.userId}`);
+      const savedAddresses = localStorage.getItem(`cdw_addresses_${user.userId}`);
       if (savedAddresses) {
         setAddresses(JSON.parse(savedAddresses));
       } else {
@@ -110,7 +120,7 @@ const ProfilePage = () => {
           },
         ];
         setAddresses(defaultAddress);
-        localStorage.setItem(`tth_addresses_${user.userId}`, JSON.stringify(defaultAddress));
+        localStorage.setItem(`cdw_addresses_${user.userId}`, JSON.stringify(defaultAddress));
       }
     }
   }, [user]);
@@ -129,6 +139,13 @@ const ProfilePage = () => {
     }
   }, []);
 
+  const resolveImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("/api")) return url;
+    const backendBase = process.env.REACT_APP_API_BASE_URL || "http://localhost:8080";
+    return `${backendBase}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   const loadFavoriteProducts = useCallback(async () => {
     if (!user) return;
     try {
@@ -136,14 +153,14 @@ const ProfilePage = () => {
       const wishlistProducts = await favoritesAPI.getProducts();
 
       const mappedFavs = wishlistProducts.map((p) => ({
-          id: p.id,
-          variantId: p.variantId,
-          name: p.name,
-          slug: p.slug,
-          image: p.mainUrl || p.imgUrl || p.img_url || "https://placehold.co/300x300?text=No+Image",
-          price: p.price ? parseFloat(p.price) : 0,
-          category: p.categoryName || "Chưa phân loại",
-        }));
+        id: p.id,
+        variantId: p.variantId,
+        name: p.name,
+        slug: p.slug,
+        image: resolveImageUrl(p.mainUrl || p.imgUrl || p.img_url),
+        price: p.price ? parseFloat(p.price) : 0,
+        category: p.categoryName || "Chưa phân loại",
+      }));
 
       setFavoriteProducts(mappedFavs);
     } catch (err) {
@@ -153,7 +170,7 @@ const ProfilePage = () => {
     }
   }, [user]);
 
-  // Load Order History when clicking on Tab or filters
+  // Load Order History when clicking on Tab
   useEffect(() => {
     if (activeTab === "orders" && user) {
       loadOrders();
@@ -201,7 +218,6 @@ const ProfilePage = () => {
         profileForm.gender
       );
 
-      // Sync local context and storage
       updateUserLocal({
         fullName: updatedUser.fullName,
         phone: updatedUser.phone,
@@ -281,7 +297,7 @@ const ProfilePage = () => {
       reader.onloadend = () => {
         const base64Data = reader.result;
         setAvatar(base64Data);
-        localStorage.setItem(`tth_avatar_${user.userId}`, base64Data);
+        localStorage.setItem(`cdw_avatar_${user.userId}`, base64Data);
       };
       reader.readAsDataURL(file);
     }
@@ -305,7 +321,7 @@ const ProfilePage = () => {
         phone: user?.phone || "",
         detail: "",
         type: "Nhà riêng",
-        isDefault: addresses.length === 0, // Default if first address
+        isDefault: addresses.length === 0,
       });
     }
     setIsAddressModalOpen(true);
@@ -329,17 +345,14 @@ const ProfilePage = () => {
     let updatedAddresses = [...addresses];
 
     if (addressForm.isDefault) {
-      // Set all other addresses to false
       updatedAddresses = updatedAddresses.map((a) => ({ ...a, isDefault: false }));
     }
 
     if (editingAddress) {
-      // Edit mode
       updatedAddresses = updatedAddresses.map((a) =>
         a.id === editingAddress.id ? { ...addressForm, id: editingAddress.id } : a
       );
     } else {
-      // Add mode
       const newAddress = {
         ...addressForm,
         id: Date.now(),
@@ -347,13 +360,12 @@ const ProfilePage = () => {
       updatedAddresses.push(newAddress);
     }
 
-    // Ensure there is at least one default address if possible
     if (updatedAddresses.length > 0 && !updatedAddresses.some((a) => a.isDefault)) {
       updatedAddresses[0].isDefault = true;
     }
 
     setAddresses(updatedAddresses);
-    localStorage.setItem(`tth_addresses_${user.userId}`, JSON.stringify(updatedAddresses));
+    localStorage.setItem(`cdw_addresses_${user.userId}`, JSON.stringify(updatedAddresses));
     setIsAddressModalOpen(false);
   };
 
@@ -362,25 +374,14 @@ const ProfilePage = () => {
     if (window.confirm("Bạn có chắc muốn xóa địa chỉ này?")) {
       let updatedAddresses = addresses.filter((a) => a.id !== addressId);
       
-      // If deleted default, make another one default
       if (addresses.find((a) => a.id === addressId)?.isDefault && updatedAddresses.length > 0) {
         updatedAddresses[0].isDefault = true;
       }
 
       setAddresses(updatedAddresses);
-      localStorage.setItem(`tth_addresses_${user.userId}`, JSON.stringify(updatedAddresses));
+      localStorage.setItem(`cdw_addresses_${user.userId}`, JSON.stringify(updatedAddresses));
     }
   };
-
-  // Orders Tab Filter logic
-  const filteredOrders = orders.filter((order) => {
-    if (ordersFilter === "all") return true;
-    const status = order.status?.toLowerCase();
-    if (ordersFilter === "pending") {
-      return ["pending", "pending_payment", "cod_pending", "paid"].includes(status);
-    }
-    return status === ordersFilter.toLowerCase();
-  });
 
   const handleOrderDetails = (order) => {
     setSelectedOrder(order);
@@ -406,6 +407,39 @@ const ProfilePage = () => {
 
     alert("Đã thêm toàn bộ sản phẩm trong đơn hàng vào giỏ hàng!");
     navigate("/cart");
+  };
+
+  const getOrderStatusLabel = (status) => {
+    const labels = {
+      WAITING_CONFIRMATION: "Chờ xác nhận",
+      WAITING_PICKUP: "Chờ lấy hàng",
+      SHIPPING: "Chờ vận chuyển",
+      DELIVERED: "Đã giao",
+      CANCELLED: "Đã hủy",
+      pending: "Chờ xử lý",
+      processing: "Đang xử lý",
+      shipped: "Đang giao",
+      delivered: "Đã giao",
+      cancelled: "Đã hủy",
+    };
+    return labels[status] || status || "Chờ xử lý";
+  };
+
+  const getPaymentStatusLabel = (status, method) => {
+    if (method === "COD") return "COD";
+    const labels = {
+      UNPAID: "Chờ thanh toán",
+      PAID: "Đã thanh toán",
+      FAILED: "Thanh toán lỗi",
+      COD: "COD",
+    };
+    return labels[status] || "Chờ thanh toán";
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    if (method === "COD") return "COD";
+    if (method === "VNPAY") return "VNPay";
+    return "QR VietQR";
   };
 
   // Favorites Tab Actions
@@ -442,482 +476,68 @@ const ProfilePage = () => {
     );
   }
 
-  const userRoleText = user?.role?.toUpperCase() === "ADMIN" ? "Quản trị viên" : "Khách hàng";
-
   return (
     <div className="profile-page">
       <div className="profile-layout">
-        {/* Sidebar */}
-        <aside className="profile-sidebar">
-          <div className="profile-sidebar-user">
-            <img src={avatar} alt={user.fullName || "User"} className="sidebar-avatar" />
-            <div className="sidebar-user-info">
-              <h3>{user.fullName || "Tài khoản"}</h3>
-              <span>{userRoleText}</span>
-            </div>
-          </div>
+        <ProfileSidebar
+          user={user}
+          avatar={avatar}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          logout={logout}
+        />
 
-          <div className="profile-menu">
-            <button
-              className={`profile-menu-item ${activeTab === "profile" ? "active" : ""}`}
-              onClick={() => setActiveTab("profile")}
-            >
-              <FontAwesomeIcon icon={icons.user} /> Thông tin cá nhân
-            </button>
-            <button
-              className={`profile-menu-item ${activeTab === "orders" ? "active" : ""}`}
-              onClick={() => setActiveTab("orders")}
-            >
-              <FontAwesomeIcon icon={icons.shoppingBag} /> Đơn hàng của tôi
-            </button>
-            <button
-              className={`profile-menu-item ${activeTab === "favorites" ? "active" : ""}`}
-              onClick={() => setActiveTab("favorites")}
-            >
-              <FontAwesomeIcon icon={icons.heart} /> Sản phẩm yêu thích
-            </button>
-
-            {user?.role?.toUpperCase() === "ADMIN" && (
-              <Link to="/admin" className="profile-menu-item admin-menu-item">
-                <FontAwesomeIcon icon={icons.shield} /> Trang quản trị
-              </Link>
-            )}
-
-            <button className="profile-menu-item logout-btn" onClick={() => logout()}>
-              <FontAwesomeIcon icon={icons.logout} /> Đăng xuất
-            </button>
-          </div>
-        </aside>
-
-        {/* Content Area */}
         <main className="profile-content">
-          {/* TAB 1: PROFILE INFO & PASSWORD */}
           {activeTab === "profile" && (
             <div>
-              <h2 className="profile-tab-title">Hồ Sơ Cá Nhân</h2>
+              <ProfileInfo
+                user={user}
+                avatar={avatar}
+                profileForm={profileForm}
+                originalForm={originalForm}
+                profileSuccess={profileSuccess}
+                profileError={profileError}
+                profileSaving={profileSaving}
+                handleProfileChange={handleProfileChange}
+                handleProfileCancel={handleProfileCancel}
+                handleProfileSave={handleProfileSave}
+                handleAvatarChange={handleAvatarChange}
+              />
 
-              {/* Avatar Section */}
-              <div className="profile-avatar-section">
-                <div className="avatar-wrapper">
-                  <img src={avatar} alt="Avatar" className="large-avatar" />
-                  <label htmlFor="avatar-file" className="avatar-upload-btn" title="Tải ảnh đại diện mới">
-                    <FontAwesomeIcon icon={icons.edit} style={{ fontSize: "0.85rem" }} />
-                  </label>
-                  <input
-                    type="file"
-                    id="avatar-file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    style={{ display: "none" }}
-                  />
-                </div>
-                <div className="avatar-info-text">
-                  <h3>{user.fullName || "Người dùng"}</h3>
-                  <p>Email liên kết: {user.email}</p>
-                  <button
-                    className="btn-change-avatar-text"
-                    onClick={() => document.getElementById("avatar-file").click()}
-                  >
-                    Đổi ảnh đại diện
-                  </button>
-                </div>
-              </div>
+              <PasswordChange
+                passwordForm={passwordForm}
+                passwordSuccess={passwordSuccess}
+                passwordError={passwordError}
+                passwordSaving={passwordSaving}
+                handlePasswordChange={handlePasswordChange}
+                handlePasswordSubmit={handlePasswordSubmit}
+              />
 
-              {/* Personal Info Form */}
-              <form onSubmit={handleProfileSave} className="profile-form-section">
-                <h3>Thông tin tài khoản</h3>
-
-                {profileSuccess && (
-                  <div className="profile-alert success">
-                    <FontAwesomeIcon icon={icons.checkCircle} /> {profileSuccess}
-                  </div>
-                )}
-                {profileError && (
-                  <div className="profile-alert error">
-                    <FontAwesomeIcon icon={icons.warning} /> {profileError}
-                  </div>
-                )}
-
-                <div className="profile-form-grid">
-                  <div className="profile-form-group">
-                    <label>Họ và tên *</label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={profileForm.fullName}
-                      onChange={handleProfileChange}
-                      placeholder="Nhập họ tên đầy đủ"
-                      required
-                    />
-                  </div>
-
-                  <div className="profile-form-group">
-                    <label>Email (Không thể thay đổi)</label>
-                    <input type="email" value={user.email} disabled />
-                  </div>
-
-                  <div className="profile-form-group">
-                    <label>Số điện thoại</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={profileForm.phone}
-                      onChange={handleProfileChange}
-                      placeholder="Nhập số điện thoại"
-                    />
-                  </div>
-
-                  <div className="profile-form-group">
-                    <label>Giới tính</label>
-                    <select name="gender" value={profileForm.gender} onChange={handleProfileChange}>
-                      <option value="MALE">Nam</option>
-                      <option value="FEMALE">Nữ</option>
-                      <option value="OTHER">Khác</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="profile-actions-row">
-                  <button type="button" className="btn-profile-cancel" onClick={handleProfileCancel}>
-                    Hủy bỏ
-                  </button>
-                  <button type="submit" className="btn-profile-save" disabled={profileSaving}>
-                    {profileSaving ? "Đang lưu..." : "Lưu thay đổi"}
-                  </button>
-                </div>
-              </form>
-
-              {/* Change Password Form */}
-              <form onSubmit={handlePasswordSubmit} className="profile-form-section">
-                <h3>Đổi mật khẩu</h3>
-
-                {passwordSuccess && (
-                  <div className="profile-alert success">
-                    <FontAwesomeIcon icon={icons.checkCircle} /> {passwordSuccess}
-                  </div>
-                )}
-                {passwordError && (
-                  <div className="profile-alert error">
-                    <FontAwesomeIcon icon={icons.warning} /> {passwordError}
-                  </div>
-                )}
-
-                <div className="profile-form-grid">
-                  <div className="profile-form-group">
-                    <label>Mật khẩu cũ *</label>
-                    <input
-                      type="password"
-                      name="oldPassword"
-                      value={passwordForm.oldPassword}
-                      onChange={handlePasswordChange}
-                      placeholder="Nhập mật khẩu hiện tại"
-                      required
-                    />
-                  </div>
-
-                  <div className="profile-form-group">
-                    <label>Mật khẩu mới (Tối thiểu 6 ký tự) *</label>
-                    <input
-                      type="password"
-                      name="newPassword"
-                      value={passwordForm.newPassword}
-                      onChange={handlePasswordChange}
-                      placeholder="Mật khẩu mới"
-                      required
-                    />
-                  </div>
-
-                  <div className="profile-form-group">
-                    <label>Xác nhận mật khẩu mới *</label>
-                    <input
-                      type="password"
-                      name="confirmPassword"
-                      value={passwordForm.confirmPassword}
-                      onChange={handlePasswordChange}
-                      placeholder="Nhập lại mật khẩu mới"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="profile-actions-row">
-                  <button type="submit" className="btn-profile-save" disabled={passwordSaving}>
-                    {passwordSaving ? "Đang xử lý..." : "Đổi mật khẩu"}
-                  </button>
-                </div>
-              </form>
-
-              {/* Address Book Section */}
-              <div className="profile-form-section">
-                <div className="address-section-header">
-                  <h3>Sổ địa chỉ giao hàng</h3>
-                  <button className="btn-add-address" onClick={() => openAddressModal()}>
-                    <FontAwesomeIcon icon={icons.plus} /> Thêm địa chỉ mới
-                  </button>
-                </div>
-
-                <div className="address-list-grid">
-                  {addresses.length === 0 ? (
-                    <p style={{ color: "#a0938a", fontStyle: "italic" }}>Chưa có địa chỉ nào được thêm.</p>
-                  ) : (
-                    addresses.map((addr) => (
-                      <div className="address-card" key={addr.id}>
-                        <div className="address-card-info">
-                          <div className="address-card-header">
-                            <span className="address-name">{addr.name}</span>
-                            {addr.isDefault && <span className="address-badge">Mặc định</span>}
-                            <span
-                              className="address-badge"
-                              style={{ backgroundColor: "#f5ece1", color: "#8c5333" }}
-                            >
-                              {addr.type}
-                            </span>
-                          </div>
-                          <span className="address-detail">{addr.detail}</span>
-                          <span className="address-phone">SĐT: {addr.phone}</span>
-                        </div>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <button
-                            className="btn-edit-address"
-                            title="Sửa địa chỉ"
-                            onClick={() => openAddressModal(addr)}
-                          >
-                            <FontAwesomeIcon icon={icons.edit} />
-                          </button>
-                          {!addr.isDefault && (
-                            <button
-                              className="btn-edit-address"
-                              style={{ color: "#d9534f" }}
-                              title="Xóa địa chỉ"
-                              onClick={(e) => handleDeleteAddress(addr.id, e)}
-                            >
-                              <FontAwesomeIcon icon={icons.trash} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+              <AddressBook
+                addresses={addresses}
+                openAddressModal={openAddressModal}
+                handleDeleteAddress={handleDeleteAddress}
+              />
             </div>
           )}
 
-          {/* TAB 2: ORDER HISTORY */}
           {activeTab === "orders" && (
-            <div>
-              <h2 className="profile-tab-title">Lịch Sử Đơn Hàng</h2>
-
-              {/* Filter Tabs */}
-              <div className="orders-filter-tabs">
-                <button
-                  className={`orders-filter-tab-btn ${ordersFilter === "all" ? "active" : ""}`}
-                  onClick={() => setOrdersFilter("all")}
-                >
-                  Tất cả đơn
-                </button>
-                <button
-                  className={`orders-filter-tab-btn ${ordersFilter === "pending" ? "active" : ""}`}
-                  onClick={() => setOrdersFilter("pending")}
-                >
-                  Chờ xử lý
-                </button>
-                <button
-                  className={`orders-filter-tab-btn ${ordersFilter === "processing" ? "active" : ""}`}
-                  onClick={() => setOrdersFilter("processing")}
-                >
-                  Đang xử lý
-                </button>
-                <button
-                  className={`orders-filter-tab-btn ${ordersFilter === "shipped" ? "active" : ""}`}
-                  onClick={() => setOrdersFilter("shipped")}
-                >
-                  Đang giao
-                </button>
-                <button
-                  className={`orders-filter-tab-btn ${ordersFilter === "delivered" ? "active" : ""}`}
-                  onClick={() => setOrdersFilter("delivered")}
-                >
-                  Đã giao
-                </button>
-                <button
-                  className={`orders-filter-tab-btn ${ordersFilter === "cancelled" ? "active" : ""}`}
-                  onClick={() => setOrdersFilter("cancelled")}
-                >
-                  Đã hủy
-                </button>
-              </div>
-
-              {ordersLoading ? (
-                <div style={{ textAlign: "center", padding: "40px" }}>Đang tải danh sách đơn hàng...</div>
-              ) : ordersError ? (
-                <div className="profile-alert error">{ordersError}</div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="order-history-empty">
-                  <h3>Chưa có đơn hàng nào</h3>
-                  <p>Bạn chưa đặt đơn hàng nào trong phân mục này.</p>
-                  <Link to="/products" className="btn-order-buy-again" style={{ textDecoration: "none" }}>
-                    Mua sắm ngay
-                  </Link>
-                </div>
-              ) : (
-                <div className="order-history-list">
-                  {filteredOrders.map((order) => {
-                    const firstItem = order.items && order.items[0];
-                    const otherItemsCount = order.items ? order.items.length - 1 : 0;
-                    
-                    // Format Order status
-                    let statusLabel = "Chờ xử lý";
-                    let statusClass = "pending";
-                    switch (order.status?.toLowerCase()) {
-                      case "pending_payment":
-                        statusLabel = "Chờ thanh toán";
-                        statusClass = "pending";
-                        break;
-                      case "cod_pending":
-                        statusLabel = "Chờ xử lý COD";
-                        statusClass = "pending";
-                        break;
-                      case "pending":
-                        statusLabel = "Chờ xử lý";
-                        statusClass = "pending";
-                        break;
-                      case "paid":
-                        statusLabel = "Đã thanh toán";
-                        statusClass = "processing";
-                        break;
-                      case "processing":
-                        statusLabel = "Đang xử lý";
-                        statusClass = "processing";
-                        break;
-                      case "shipped":
-                        statusLabel = "Đang giao";
-                        statusClass = "shipped";
-                        break;
-                      case "delivered":
-                        statusLabel = "Đã giao";
-                        statusClass = "delivered";
-                        break;
-                      case "cancelled":
-                        statusLabel = "Đã hủy";
-                        statusClass = "cancelled";
-                        break;
-                      default:
-                        statusLabel = order.status || "Chờ xử lý";
-                        statusClass = "pending";
-                    }
-
-                    return (
-                      <div className="order-history-item" key={order.id}>
-                        <div className="order-item-header">
-                          <div className="order-item-meta">
-                            <span className="order-id-label">Mã đơn hàng: #CDW-{order.id}</span>
-                            <span className="order-date-label">
-                              Ngày đặt: {new Date(order.createdAt).toLocaleDateString("vi-VN")} {new Date(order.createdAt).toLocaleTimeString("vi-VN", {hour: '2-digit', minute:'2-digit'})}
-                            </span>
-                          </div>
-                          <span className={`order-status-badge ${statusClass}`}>{statusLabel}</span>
-                        </div>
-
-                        {firstItem && (
-                          <div className="order-item-body">
-                            <div className="order-prod-preview">
-                              <img
-                                src={firstItem.imageUrl || "https://placehold.co/80x80?text=No+Image"}
-                                alt={firstItem.productName}
-                                className="order-prod-thumb"
-                                onError={(e) => (e.target.src = "https://placehold.co/80x80?text=No+Image")}
-                              />
-                              <div className="order-prod-info">
-                                <h4>{firstItem.productName}</h4>
-                                {firstItem.size && (
-                                  <div className="order-prod-attrs">Kích thước/Loại: {firstItem.size}</div>
-                                )}
-                                <div className="order-price-qty">
-                                  <span className="order-price">{formatPrice(firstItem.price)}</span>
-                                  <span className="order-qty">x{firstItem.quantity}</span>
-                                </div>
-                              </div>
-                            </div>
-                            {otherItemsCount > 0 && (
-                              <div className="order-more-products-text">
-                                và {otherItemsCount} sản phẩm khác trong đơn hàng này...
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="order-item-footer">
-                          <span className="order-total-amount">
-                            Tổng thanh toán: <strong>{formatPrice(order.totalAmount)}</strong>
-                          </span>
-                          <div className="order-item-actions">
-                            <button className="btn-order-detail" onClick={() => handleOrderDetails(order)}>
-                              Xem chi tiết
-                            </button>
-                            <button className="btn-order-buy-again" onClick={() => handleBuyAgain(order)}>
-                              Mua lại
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <Orders
+              orders={orders}
+              ordersLoading={ordersLoading}
+              ordersError={ordersError}
+              handleOrderDetails={handleOrderDetails}
+              handleBuyAgain={handleBuyAgain}
+            />
           )}
 
-          {/* TAB 3: FAVORITES */}
           {activeTab === "favorites" && (
-            <div>
-              <h2 className="profile-tab-title">Sản Phẩm Yêu Thích</h2>
-
-              {favsLoading ? (
-                <div style={{ textAlign: "center", padding: "40px" }}>Đang tải danh sách sản phẩm yêu thích...</div>
-              ) : favoriteProducts.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                  <h3 style={{ color: "#4a3e3d", marginBottom: "10px" }}>Danh sách yêu thích trống</h3>
-                  <p style={{ color: "#a0938a", marginBottom: "25px" }}>Hãy thả tim những sản phẩm bạn yêu thích khi mua sắm nhé!</p>
-                  <Link to="/products" className="btn-order-buy-again" style={{ textDecoration: "none" }}>
-                    Khám phá sản phẩm
-                  </Link>
-                </div>
-              ) : (
-                <div className="favorites-list-grid">
-                  {favoriteProducts.map((prod) => (
-                    <div className="fav-card" key={prod.id}>
-                      <div className="fav-card-img" onClick={() => navigate(`/products/${prod.slug}`)}>
-                        <img src={prod.image} alt={prod.name} onError={(e) => (e.target.src = "https://placehold.co/300x300?text=No+Image")} />
-                        <button
-                          className="btn-remove-fav"
-                          title="Xóa khỏi yêu thích"
-                          onClick={(e) => handleRemoveFavorite(prod.id, e)}
-                        >
-                          <FontAwesomeIcon icon={icons.trash} style={{ fontSize: "0.85rem" }} />
-                        </button>
-                      </div>
-                      <div className="fav-card-body">
-                        <span className="fav-card-cat">{prod.category}</span>
-                        <h4 className="fav-card-title" onClick={() => navigate(`/products/${prod.slug}`)}>
-                          {prod.name}
-                        </h4>
-                        <div className="fav-card-footer">
-                          <span className="fav-card-price">{formatPrice(prod.price)}</span>
-                          <button
-                            className="btn-fav-add-cart"
-                            title="Thêm vào giỏ hàng"
-                            onClick={() => handleAddFavToCart(prod)}
-                          >
-                            <FontAwesomeIcon icon={icons.cart} style={{ fontSize: "0.85rem" }} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Favorites
+              favoriteProducts={favoriteProducts}
+              favsLoading={favsLoading}
+              handleRemoveFavorite={handleRemoveFavorite}
+              handleAddFavToCart={handleAddFavToCart}
+            />
           )}
         </main>
       </div>
@@ -959,7 +579,7 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="profile-form-group">
-                  <label>Địa chỉ chi tiết (Số nhà, tên đường, phường, quận, thành phố...) *</label>
+                  <label>Địa chỉ chi tiết *</label>
                   <input
                     type="text"
                     name="detail"
@@ -985,9 +605,11 @@ const ProfilePage = () => {
                     name="isDefault"
                     checked={addressForm.isDefault}
                     onChange={handleAddressChange}
-                    disabled={editingAddress?.isDefault} // Cannot uncheck default if it is default
+                    disabled={editingAddress?.isDefault}
                   />
-                  <label htmlFor="isDefault" style={{ cursor: "pointer", margin: 0 }}>Đặt làm địa chỉ mặc định</label>
+                  <label htmlFor="isDefault" style={{ cursor: "pointer", margin: 0 }}>
+                    Đặt làm địa chỉ mặc định
+                  </label>
                 </div>
               </div>
 
@@ -1015,7 +637,6 @@ const ProfilePage = () => {
               </button>
             </div>
             <div className="order-modal-content">
-              {/* Order Info */}
               <div className="modal-section">
                 <h4>Thông tin chung</h4>
                 <ul className="modal-info-list">
@@ -1027,28 +648,20 @@ const ProfilePage = () => {
                     </strong>
                   </li>
                   <li>
-                    <span>Trạng thái đơn hàng:</span>
-                    <strong style={{ textTransform: "uppercase" }}>
-                      {{
-                        pending_payment: "Chờ thanh toán",
-                        cod_pending: "Chờ xử lý COD",
-                        pending: "Chờ xử lý",
-                        paid: "Đã thanh toán",
-                        processing: "Đang xử lý",
-                        shipped: "Đang giao hàng",
-                        delivered: "Đã giao hàng",
-                        cancelled: "Đã hủy",
-                      }[selectedOrder.status] || selectedOrder.status}
-                    </strong>
+                    <span>Trạng thái:</span>
+                    <strong>{getOrderStatusLabel(selectedOrder.status)}</strong>
+                  </li>
+                  <li>
+                    <span>Thanh toán:</span>
+                    <strong>{getPaymentStatusLabel(selectedOrder.paymentStatus, selectedOrder.paymentMethod)}</strong>
                   </li>
                   <li>
                     <span>Phương thức thanh toán:</span>
-                    <strong>{selectedOrder.paymentMethod === "COD" ? "Thanh toán khi nhận hàng (COD)" : "Chuyển khoản ngân hàng"}</strong>
+                    <strong>{getPaymentMethodLabel(selectedOrder.paymentMethod)}</strong>
                   </li>
                 </ul>
               </div>
 
-              {/* Delivery Info */}
               <div className="modal-section">
                 <h4>Thông tin giao hàng</h4>
                 <div className="modal-address-block">
@@ -1056,18 +669,18 @@ const ProfilePage = () => {
                   <p><strong>Số điện thoại:</strong> {selectedOrder.phone}</p>
                   <p><strong>Email:</strong> {selectedOrder.email}</p>
                   <p>
-                    <strong>Địa chỉ:</strong> {selectedOrder.address}
-                    {selectedOrder.ward ? `, Phường/Xã ${selectedOrder.ward}` : ""}
-                    {selectedOrder.district ? `, Quận/Huyện ${selectedOrder.district}` : ""}
-                    {selectedOrder.province ? `, Tỉnh/Thành ${selectedOrder.province}` : ""}
+                    <strong>Địa chỉ:</strong> {[
+                      selectedOrder.address,
+                      selectedOrder.ward,
+                      selectedOrder.district,
+                      selectedOrder.province,
+                    ].filter(Boolean).join(", ")}
                   </p>
-                  {selectedOrder.note && <p><strong>Ghi chú:</strong> {selectedOrder.note}</p>}
                 </div>
               </div>
 
-              {/* Products List */}
               <div className="modal-section">
-                <h4>Sản phẩm trong đơn hàng</h4>
+                <h4>Sản phẩm</h4>
                 <div className="modal-prods-list">
                   {selectedOrder.items?.map((item) => (
                     <div className="modal-prod-item" key={item.id}>
@@ -1075,31 +688,39 @@ const ProfilePage = () => {
                         src={item.imageUrl || "https://placehold.co/60x80?text=No+Image"}
                         alt={item.productName}
                         className="modal-prod-img"
-                        onError={(e) => (e.target.src = "https://placehold.co/60x80?text=No+Image")}
                       />
                       <div className="modal-prod-details">
-                        <h5 className="modal-prod-name">{item.productName}</h5>
-                        {item.size && <span className="modal-prod-sub">Phân loại: {item.size}</span>}
+                        <h5>{item.productName}</h5>
+                        {item.size && <span>Loại: {item.size}</span>}
                       </div>
                       <div className="modal-prod-price-info">
-                        <span className="modal-prod-price">{formatPrice(item.price)}</span>
-                        <div className="modal-prod-qty">Số lượng: x{item.quantity}</div>
+                        <span>{formatPrice(item.price)}</span>
+                        <div>x{item.quantity}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Order Calculations */}
-              <div className="modal-section" style={{ borderTop: "1px solid #f5ece1", paddingTop: "15px" }}>
+              <div className="modal-section">
                 <ul className="modal-info-list">
                   <li>
-                    <span>Phí vận chuyển:</span>
-                    <strong>{selectedOrder.shippingFee === 0 || parseFloat(selectedOrder.shippingFee) === 0 ? "Miễn phí" : formatPrice(selectedOrder.shippingFee)}</strong>
+                    <span>Tạm tính:</span>
+                    <strong>{formatPrice(selectedOrder.subtotal || 0)}</strong>
                   </li>
-                  <li style={{ fontSize: "1.1rem", marginTop: "5px" }}>
+                  {Number(selectedOrder.discountAmount || 0) > 0 && (
+                    <li>
+                      <span>Giảm giá{selectedOrder.couponCode ? ` (${selectedOrder.couponCode})` : ""}:</span>
+                      <strong>-{formatPrice(selectedOrder.discountAmount)}</strong>
+                    </li>
+                  )}
+                  <li>
+                    <span>Phí vận chuyển:</span>
+                    <strong>{selectedOrder.shippingFee === 0 ? "Miễn phí" : formatPrice(selectedOrder.shippingFee)}</strong>
+                  </li>
+                  <li>
                     <span>Tổng thanh toán:</span>
-                    <strong style={{ color: "#c07a4d", fontSize: "1.25rem" }}>{formatPrice(selectedOrder.totalAmount)}</strong>
+                    <strong style={{ color: "#c07a4d" }}>{formatPrice(selectedOrder.totalAmount)}</strong>
                   </li>
                 </ul>
               </div>
@@ -1112,7 +733,7 @@ const ProfilePage = () => {
                   handleBuyAgain(selectedOrder);
                   setIsOrderModalOpen(false);
                 }}>
-                  Mua lại đơn này
+                  Mua lại
                 </button>
               </div>
             </div>

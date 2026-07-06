@@ -64,7 +64,7 @@ const VNPayCallback = () => {
                                     <FontAwesomeIcon icon={icons.checkCircle} style={{ fontSize: '3.5rem' }} />
                                 </div>
                                 <h2>Thanh Toán Thành Công!</h2>
-                                <p className="status-desc">{result.message || 'Cảm ơn bạn đã hoàn tất thanh toán cho đơn hàng tại TTH Shop.'}</p>
+                                <p className="status-desc">{result.message || 'Cảm ơn bạn đã hoàn tất thanh toán cho đơn hàng tại CDW Handmade.'}</p>
                             </>
                         ) : (
                             <>

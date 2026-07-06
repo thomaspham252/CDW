@@ -8,6 +8,7 @@ import { FontAwesomeIcon, icons } from "../../utils/icons";
 import { formatPrice } from "../../utils/formatPrice";
 import productService from "../../services/productService";
 import "../../styles/favorites/FavoritesPage.css";
+import {favoritesAPI} from "../../services/api";
 
 const FavoritesPage = () => {
   const { isAuthenticated, authLoaded } = useAuth();
@@ -55,35 +56,16 @@ const FavoritesPage = () => {
               null;
 
             return {
-            id: product.id,
-            variantId: product.variantId || catalogProduct.variantId,
-            name: catalogProduct.name || product.name,
-            slug: catalogProduct.slug || product.slug,
-            image,
-            price: rawPrice !== null && rawPrice !== undefined ? parseFloat(rawPrice) : null,
-          };
+              id: product.id,
+              variantId: product.variantId || catalogProduct.variantId,
+              name: catalogProduct.name || product.name,
+              slug: catalogProduct.slug || product.slug,
+              image,
+              price: rawPrice !== null && rawPrice !== undefined ? parseFloat(rawPrice) : 0,
+              category: catalogProduct.categoryName || product.categoryName || "Chưa phân loại",
+            };
           }),
         );
-        
-        // Gọi API backend lấy danh sách sản phẩm active
-        const response = await productService.getProducts({
-          page: 0,
-          size: 100, // Lấy số lượng vừa đủ để khớp
-          sort: "id,desc",
-        });
-
-        // Ánh xạ dữ liệu tương ứng với frontend
-        const mappedProducts = response.content.map((p) => ({
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          image: p.mainUrl || p.imgUrl || p.img_url || "https://placehold.co/300x300?text=No+Image",
-          price: p.price ? parseFloat(p.price) : 0,
-          category: p.categoryName || "Chưa phân loại",
-          stock: 10,
-        }));
-
-        setProducts(mappedProducts);
       } catch (err) {
         console.error("Lỗi tải sản phẩm yêu thích:", err);
         setError(err.response?.data?.message || "Không thể tải danh sách sản phẩm");
