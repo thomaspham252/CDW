@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -7,43 +7,6 @@ import { useFavorites } from "./useFavorites";
 import { useToast } from "./useToast";
 import { notificationsAPI } from "../services/api";
 import productService from "../services/productService"; // API thật từ backend
-
-const CATEGORY_ALIASES = {
-  "phu kien": ["phu kien trang suc"],
-  "trang tri": ["trang tri gom su"],
-  "san pham tu len": ["san pham tu len vai", "len vai"],
-  "san pham tu tho cam": ["tho cam", "san pham tu len vai", "len vai"],
-};
-
-const normalizeCategory = (value = "") =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .replace(/&/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
-const getCategoryKeys = (value) => {
-  const normalized = normalizeCategory(value);
-  return [normalized, ...(CATEGORY_ALIASES[normalized] || [])].filter(Boolean);
-};
-
-const isMatchingCategory = (productCategory, selectedCategory) => {
-  const productKeys = getCategoryKeys(productCategory);
-  const selectedKeys = getCategoryKeys(selectedCategory);
-
-  return selectedKeys.some((selectedKey) =>
-    productKeys.some(
-      (productKey) =>
-        productKey === selectedKey ||
-        productKey.includes(selectedKey) ||
-        selectedKey.includes(productKey),
-    ),
-  );
-};
 
 export const useProductsPage = () => {
   const navigate = useNavigate();
@@ -64,6 +27,8 @@ export const useProductsPage = () => {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+  const categoryParam = searchParams.get("category") || "";
+  const appliedSearchKeyword = searchParams.get("search") || "";
 
   // Động số sản phẩm mỗi trang dựa vào sidebar
   const itemsPerPage = useMemo(() => (isSidebarOpen ? 6 : 8), [isSidebarOpen]);
@@ -77,21 +42,44 @@ export const useProductsPage = () => {
   } = usePagination(filteredProducts, itemsPerPage, true);
 
   useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await productService.getCategories();
+        setCategories(data || []);
+      } catch (err) {
+        console.error("Lỗi tải danh mục:", err);
+        setCategories([]);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         setError("");
 
-        // Gọi API backend thật
+        const matchedCategory = categories.find(
+          (category) =>
+            String(category.id) === categoryParam ||
+            category.slug === categoryParam ||
+            category.name === categoryParam,
+        );
+
         const response = await productService.getProducts({
           page: 0,
-          size: 100, // Lấy nhiều để filter ở frontend
+          size: 200,
           sort: "id,desc",
+          categoryId: matchedCategory?.id,
+          search: appliedSearchKeyword || undefined,
         });
 
         // Map data từ backend sang format frontend
         const mappedProducts = response.content.map((p) => ({
           id: p.id,
+          variantId: p.variantId,
           name: p.name,
           slug: p.slug,
           image:
@@ -100,6 +88,7 @@ export const useProductsPage = () => {
             p.img_url ||
             "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
+          categoryId: p.categoryId,
           category: p.categoryName || "Chưa phân loại",
           rating: 5, // Backend chưa có rating
           reviews: 0, // Backend chưa có reviews
@@ -108,12 +97,6 @@ export const useProductsPage = () => {
         }));
 
         setProducts(mappedProducts);
-
-        // Load categories từ products
-        const uniqueCategories = [
-          ...new Set(mappedProducts.map((p) => p.category)),
-        ];
-        setCategories(uniqueCategories);
       } catch (err) {
         console.error("Lỗi tải sản phẩm:", err);
         setError(
@@ -125,50 +108,31 @@ export const useProductsPage = () => {
     };
 
     loadData();
-  }, []);
+  }, [categoryParam, appliedSearchKeyword, categories]);
 
   useEffect(() => {
     // Lấy category từ URL query params và cập nhật state
-    const categoryFromUrl = searchParams.get("category");
-    if (categoryFromUrl) {
-      setSelectedCategory(decodeURIComponent(categoryFromUrl));
+    if (categoryParam) {
+      const matchedCategory = categories.find(
+        (category) =>
+          String(category.id) === categoryParam ||
+          category.slug === categoryParam ||
+          category.name === categoryParam,
+      );
+      setSelectedCategory(matchedCategory?.name || decodeURIComponent(categoryParam));
     } else {
       setSelectedCategory("");
     }
 
-    const searchFromUrl = searchParams.get("search");
-    if (searchFromUrl) {
-      setSearchKeyword(decodeURIComponent(searchFromUrl));
+    if (appliedSearchKeyword) {
+      setSearchKeyword(decodeURIComponent(appliedSearchKeyword));
+    } else {
+      setSearchKeyword("");
     }
-  }, [searchParams]);
+  }, [categoryParam, appliedSearchKeyword, categories]);
 
-  useEffect(() => {
-    filterAndSortProducts();
-  }, [products, selectedCategory, sortBy, searchKeyword, minPrice, maxPrice]);
-
-  const loadCategories = async () => {
-    // Categories đã được load trong useEffect chính
-  };
-
-  const filterAndSortProducts = () => {
+  const filterAndSortProducts = useCallback(() => {
     let filtered = [...products];
-
-    // Lọc theo danh mục
-    if (selectedCategory) {
-      filtered = filtered.filter((p) =>
-        isMatchingCategory(p.category, selectedCategory),
-      );
-    }
-
-    // Tìm kiếm
-    if (searchKeyword) {
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-          (p.description &&
-            p.description.toLowerCase().includes(searchKeyword.toLowerCase())),
-      );
-    }
 
     // Lọc theo giá
     if (minPrice) {
@@ -196,7 +160,11 @@ export const useProductsPage = () => {
     }
 
     setFilteredProducts(filtered);
-  };
+  }, [products, minPrice, maxPrice, sortBy]);
+
+  useEffect(() => {
+    filterAndSortProducts();
+  }, [filterAndSortProducts]);
 
   const handleClearFilters = () => {
     setSelectedCategory("");
@@ -216,9 +184,10 @@ export const useProductsPage = () => {
   };
 
   const handleCategoryChange = (category) => {
-    setSelectedCategory(category);
+    const categoryValue = category?.name || "";
+    setSelectedCategory(categoryValue);
     if (category) {
-      setSearchParams({ category: category });
+      setSearchParams({ category: category.slug || String(category.id) });
     } else {
       setSearchParams({});
     }
@@ -236,7 +205,8 @@ export const useProductsPage = () => {
 
       addToCart(
         {
-          id: product.id,
+          id: product.variantId || product.id,
+          productId: product.id,
           name: product.name,
           slug: product.slug,
           image: product.image,

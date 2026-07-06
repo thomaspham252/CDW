@@ -17,6 +17,7 @@ export const useProducts = () => {
 
         const mappedProducts = response.content.map((p) => ({
           id: p.id,
+          variantId: p.variantId,
           name: p.name,
           slug: p.slug,
           image:

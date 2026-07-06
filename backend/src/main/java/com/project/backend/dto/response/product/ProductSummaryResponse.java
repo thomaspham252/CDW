@@ -13,9 +13,11 @@ public class ProductSummaryResponse {
     private Integer id;
     private String name;
     private String slug;
+    private Integer variantId;
     private String mainUrl;
     private BigDecimal price;
     private BigDecimal basePrice;
     private Boolean isActive;
+    private Integer categoryId;
     private String categoryName;
 }

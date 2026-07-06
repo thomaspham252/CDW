@@ -34,7 +34,7 @@ public interface ProductService {
     ProductDetailResponse getBySlug(String slug);
 
     /** Danh sách sản phẩm đang active, phân trang (dùng cho storefront). */
-    Page<ProductSummaryResponse> listActive(Pageable pageable);
+    Page<ProductSummaryResponse> listActive(Pageable pageable, Integer categoryId, String search);
 
     /** Danh sách toàn bộ sản phẩm, phân trang (dùng cho admin). */
     Page<ProductSummaryResponse> listAdmin(Pageable pageable);

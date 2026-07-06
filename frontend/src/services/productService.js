@@ -11,10 +11,15 @@ const productService = {
    * @returns {Promise} Page<ProductSummaryResponse>
    */
   getProducts: async (params = {}) => {
-    const { page = 0, size = 12, sort = 'id,desc' } = params;
+    const { page = 0, size = 12, sort = 'id,desc', categoryId, search } = params;
     const response = await axiosInstance.get('/api/products', {
-      params: { page, size, sort }
+      params: { page, size, sort, categoryId, search }
     });
+    return response.data;
+  },
+
+  getCategories: async () => {
+    const response = await axiosInstance.get('/api/products/categories');
     return response.data;
   },
 
