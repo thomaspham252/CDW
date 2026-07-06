@@ -25,6 +25,10 @@ const Header = () => {
         setFavoritesCount(await favoritesAPI.getCount());
       } catch (err) {
         console.error("Lỗi tải số lượng yêu thích:", err);
+    const updateCount = () => {
+      if (user) {
+        setFavoritesCount(favoritesAPI.getCount(user.id));
+      } else {
         setFavoritesCount(0);
       }
     };
@@ -35,6 +39,13 @@ const Header = () => {
     return () =>
       window.removeEventListener("wishlist-updated", loadFavoritesCount);
   }, [user, authLoaded, isAuthenticated]);
+    updateCount();
+    window.addEventListener('favorites-updated', updateCount);
+
+    return () => {
+      window.removeEventListener('favorites-updated', updateCount);
+    };
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -185,16 +196,18 @@ const Header = () => {
           <FontAwesomeIcon icon={icons.cart} /> Giỏ Hàng{" "}
           {getTotalItems() > 0 && `(${getTotalItems()})`}
         </Link>
+        {authLoaded && isAuthenticated && (
+          <Link
+            to="/favorites"
+            className="mobile-nav-link"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <FontAwesomeIcon icon={icons.heart} /> Yêu Thích{" "}
+            {favoritesCount > 0 && `(${favoritesCount})`}
+          </Link>
+        )}
         {authLoaded && isAuthenticated ? (
           <>
-            <Link
-              to="/favorites"
-              className="mobile-nav-link"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <FontAwesomeIcon icon={icons.heart} /> Yêu Thích{" "}
-              {favoritesCount > 0 && `(${favoritesCount})`}
-            </Link>
             {user?.role?.toUpperCase() === 'ADMIN' && (
               <Link
                 to="/admin"

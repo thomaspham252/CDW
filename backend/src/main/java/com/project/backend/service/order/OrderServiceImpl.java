@@ -15,10 +15,17 @@ import com.project.backend.repository.product.ProductVariantRepository;
 import com.project.backend.repository.product.ProductRepository;
 import com.project.backend.repository.auth.UserRepository;
 import com.project.backend.dto.response.analytics.AnalyticsResponse;
+import com.project.backend.config.VNPayConfig;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.project.backend.exception.BadRequestException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -50,19 +57,11 @@ public class OrderServiceImpl implements OrderService {
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final VNPayConfig vnpayConfig;
 
     @Override
     @Transactional
     public OrderResponse createOrder(OrderCreateRequest request, User currentUser) {
-        String paymentMethod = request.getPaymentMethod();
-        if (!PAYMENT_METHOD_BANK_TRANSFER.equals(paymentMethod) && !PAYMENT_METHOD_COD.equals(paymentMethod)) {
-            throw new BadRequestException("Phương thức thanh toán không hợp lệ");
-        }
-
-        String initialStatus = PAYMENT_METHOD_BANK_TRANSFER.equals(paymentMethod)
-                ? "pending_payment"
-                : "cod_pending";
-
         // 1. Khởi tạo thực thể Order
         Order order = Order.builder()
                 .userId(currentUser != null ? currentUser.getId() : null)
@@ -74,9 +73,9 @@ public class OrderServiceImpl implements OrderService {
                 .district(request.getDistrict())
                 .province(request.getProvince())
                 .note(request.getNote())
-                .paymentMethod(paymentMethod)
+                .paymentMethod(request.getPaymentMethod())
                 .couponCode(request.getCouponCode())
-                .status(initialStatus)
+                .status("pending")
                 .build();
 
         // 2. Tính toán tiền hàng và phí ship từ DB để bảo mật
@@ -101,10 +100,10 @@ public class OrderServiceImpl implements OrderService {
             orderItems.add(orderItem);
         }
 
-        // Phí vận chuyển: Free ship cho đơn từ 500.000đ, ngược lại 35.000đ
-        BigDecimal shippingFee = subtotal.compareTo(FREE_SHIPPING_THRESHOLD) >= 0
+        // Phí vận chuyển: Free ship cho đơn từ 500.000đ, ngược lại 30.000đ
+        BigDecimal shippingFee = subtotal.compareTo(BigDecimal.valueOf(500000)) >= 0 
                 ? BigDecimal.ZERO 
-                : STANDARD_SHIPPING_FEE;
+                : BigDecimal.valueOf(30000);
 
         order.setShippingFee(shippingFee);
         order.setTotalAmount(subtotal.add(shippingFee));
@@ -113,7 +112,62 @@ public class OrderServiceImpl implements OrderService {
         // 3. Lưu đơn hàng (Cascade tự động lưu OrderItems)
         Order savedOrder = orderRepository.save(order);
 
-        return mapToOrderResponse(savedOrder);
+        OrderResponse response = mapToOrderResponse(savedOrder);
+
+        if ("VNPAY".equalsIgnoreCase(savedOrder.getPaymentMethod())) {
+            try {
+                HttpServletRequest servletRequest = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+                
+                Map<String, String> vnp_Params = new HashMap<>();
+                vnp_Params.put("vnp_Version", "2.1.0");
+                vnp_Params.put("vnp_Command", "pay");
+                vnp_Params.put("vnp_TmnCode", vnpayConfig.getTmnCode());
+                vnp_Params.put("vnp_Amount", String.valueOf(savedOrder.getTotalAmount().multiply(new BigDecimal(100)).longValue()));
+                vnp_Params.put("vnp_CurrCode", "VND");
+                vnp_Params.put("vnp_TxnRef", String.valueOf(savedOrder.getId()));
+                vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang " + savedOrder.getId());
+                vnp_Params.put("vnp_OrderType", "other");
+                vnp_Params.put("vnp_Locale", "vn");
+                vnp_Params.put("vnp_ReturnUrl", vnpayConfig.getReturnUrl());
+                vnp_Params.put("vnp_IpAddr", VNPayConfig.getIpAddress(servletRequest));
+
+                Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+                String vnp_CreateDate = formatter.format(cld.getTime());
+                vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+
+                List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
+                Collections.sort(fieldNames);
+                StringBuilder hashData = new StringBuilder();
+                StringBuilder query = new StringBuilder();
+                for (String fieldName : fieldNames) {
+                    String fieldValue = vnp_Params.get(fieldName);
+                    if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                        String encodedName = URLEncoder.encode(fieldName, StandardCharsets.UTF_8.toString());
+                        String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString());
+
+                        if (hashData.length() > 0) {
+                            hashData.append('&');
+                        }
+                        hashData.append(fieldName).append('=').append(encodedValue);
+
+                        if (query.length() > 0) {
+                            query.append('&');
+                        }
+                        query.append(encodedName).append('=').append(encodedValue);
+                    }
+                }
+                String queryUrl = query.toString();
+                String vnp_SecureHash = VNPayConfig.hmacSHA512(vnpayConfig.getHashSecret(), hashData.toString());
+                String paymentUrl = vnpayConfig.getVnpUrl() + "?" + queryUrl + "&vnp_SecureHash=" + vnp_SecureHash;
+                
+                response.setPaymentUrl(paymentUrl);
+            } catch (Exception e) {
+                System.err.println("Error generating VNPAY URL: " + e.getMessage());
+            }
+        }
+
+        return response;
     }
 
     @Override

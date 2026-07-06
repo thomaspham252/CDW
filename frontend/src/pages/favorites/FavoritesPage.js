@@ -1,31 +1,28 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { favoritesAPI } from "../../services/api";
-import productService from "../../services/productService";
-import { formatPrice } from "../../utils/formatPrice";
+import { useCart } from "../../context/CartContext";
+import { useFavorites } from "../../hooks/useFavorites";
+import { useToast } from "../../hooks/useToast";
 import { FontAwesomeIcon, icons } from "../../utils/icons";
+import { formatPrice } from "../../utils/formatPrice";
+import productService from "../../services/productService";
 import "../../styles/favorites/FavoritesPage.css";
 
-const ITEMS_PER_PAGE = 8;
-
 const FavoritesPage = () => {
+  const { isAuthenticated, authLoaded } = useAuth();
+  const { favorites, toggleFavorite } = useFavorites();
+  const { addToCart } = useCart();
+  const { addToast } = useToast();
   const navigate = useNavigate();
-  const { authLoaded, isAuthenticated } = useAuth();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
+  // Tải danh sách sản phẩm từ backend và lọc
   useEffect(() => {
-    if (!authLoaded) return;
-
-    if (!isAuthenticated) {
-      navigate("/login?redirect=favorites", { replace: true });
-      return;
-    }
-
-    const loadFavorites = async () => {
+    const loadProducts = async () => {
       try {
         setLoading(true);
         setError("");
@@ -67,45 +64,96 @@ const FavoritesPage = () => {
           };
           }),
         );
+        
+        // Gọi API backend lấy danh sách sản phẩm active
+        const response = await productService.getProducts({
+          page: 0,
+          size: 100, // Lấy số lượng vừa đủ để khớp
+          sort: "id,desc",
+        });
+
+        // Ánh xạ dữ liệu tương ứng với frontend
+        const mappedProducts = response.content.map((p) => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          image: p.mainUrl || p.imgUrl || p.img_url || "https://placehold.co/300x300?text=No+Image",
+          price: p.price ? parseFloat(p.price) : 0,
+          category: p.categoryName || "Chưa phân loại",
+          stock: 10,
+        }));
+
+        setProducts(mappedProducts);
       } catch (err) {
-        console.error("Lỗi tải wishlist:", err);
-        setError("Không thể tải danh sách sản phẩm yêu thích.");
+        console.error("Lỗi tải sản phẩm yêu thích:", err);
+        setError(err.response?.data?.message || "Không thể tải danh sách sản phẩm");
       } finally {
         setLoading(false);
       }
     };
 
-    loadFavorites();
-  }, [authLoaded, isAuthenticated, navigate]);
-
-  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE) || 1;
-
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return products.slice(start, start + ITEMS_PER_PAGE);
-  }, [products, currentPage]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
+    if (authLoaded && isAuthenticated) {
+      loadProducts();
     }
-  }, [currentPage, totalPages]);
+  }, [authLoaded, isAuthenticated]);
 
-  const handleRemoveFavorite = async (productId) => {
-    try {
-      await favoritesAPI.removeFromFavorites(productId);
-      setProducts((prev) => prev.filter((product) => product.id !== productId));
-    } catch (err) {
-      console.error("Lỗi xóa wishlist:", err);
-      setError("Không thể xóa sản phẩm khỏi yêu thích.");
+  // Lọc sản phẩm đã thích từ danh sách ID trong localStorage
+  const favoriteProducts = products.filter((p) => favorites.includes(p.id));
+
+  const handleRemoveFavorite = async (e, productId, name) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const result = await toggleFavorite(productId);
+    if (result.success) {
+      addToast(`Đã xóa "${name}" khỏi danh sách yêu thích`, "success");
+    } else {
+      addToast("Lỗi khi xóa sản phẩm", "error");
     }
   };
 
-  if (!authLoaded || loading) {
+  const handleAddToCart = (e, product) => {
+    e.stopPropagation();
+    e.preventDefault();
+    addToCart(
+      {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        image: product.image,
+        price: product.price,
+        size: null,
+      },
+      1
+    );
+    addToast(`Đã thêm "${product.name}" vào giỏ hàng`, "success");
+  };
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (authLoaded && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [authLoaded, isAuthenticated, navigate]);
+
+  if (loading) {
     return (
       <div className="favorites-page">
-        <div className="favorites-shell">
-          <div className="favorites-loading">Đang tải sản phẩm yêu thích...</div>
+        <div className="favorites-loading">
+          <div className="spinner"></div>
+          <p>Đang tải danh sách yêu thích...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="favorites-page">
+        <div className="favorites-error">
+          <FontAwesomeIcon icon={icons.warning} className="error-icon" />
+          <h2>Đã xảy ra lỗi</h2>
+          <p>{error}</p>
+          <Link to="/products" className="btn-back">Quay lại mua sắm</Link>
         </div>
       </div>
     );
@@ -113,90 +161,74 @@ const FavoritesPage = () => {
 
   return (
     <div className="favorites-page">
-      <section className="favorites-shell">
+      <div className="favorites-container">
+        {/* Header */}
         <div className="favorites-header">
-          <h1>Sản Phẩm Yêu Thích</h1>
-          <span className="favorites-count">{products.length} sản phẩm</span>
+          <h1>
+            <FontAwesomeIcon icon={icons.heart} className="heart-header-icon" />
+            Sản phẩm yêu thích của bạn
+          </h1>
+          <span className="favorites-count">
+            Đang lưu {favoriteProducts.length} sản phẩm
+          </span>
         </div>
 
-        {error && <div className="favorites-error">{error}</div>}
-
-        {products.length === 0 ? (
+        {favoriteProducts.length === 0 ? (
           <div className="favorites-empty">
-            <FontAwesomeIcon icon={icons.heartRegular} />
-            <h2>Chưa có sản phẩm yêu thích</h2>
-            <p>Hãy bấm tim ở sản phẩm bạn thích để lưu lại tại đây.</p>
-            <Link to="/products" className="favorites-shop-link">
-              Khám phá sản phẩm
+            <div className="empty-icon-wrapper">
+              <FontAwesomeIcon icon={icons.heartRegular} />
+            </div>
+            <h2>Danh sách yêu thích trống</h2>
+            <p>Hãy lưu những sản phẩm bạn yêu thích nhất khi tham quan mua sắm để tiện theo dõi nhé!</p>
+            <Link to="/products" className="btn-shop-now">
+              <FontAwesomeIcon icon={icons.chevronLeft} /> Khám phá sản phẩm
             </Link>
           </div>
         ) : (
-          <>
-            <div className="favorites-grid">
-              {paginatedProducts.map((product) => (
-                <article key={product.id} className="favorite-card">
-                  <div
-                    className="favorite-image-wrap"
-                    onClick={() => navigate(`/products/${product.slug || product.id}`)}
-                  >
+          <div className="favorites-grid">
+            {favoriteProducts.map((product) => (
+              <div key={product.id} className="fav-card">
+                <Link to={`/products/${product.slug}`} className="fav-card-link">
+                  {/* Image Container */}
+                  <div className="fav-image-wrapper">
                     <img
                       src={product.image}
                       alt={product.name}
                       onError={(e) => {
-                        e.currentTarget.src =
-                          "https://placehold.co/500x500?text=No+Image";
+                        e.target.src = "https://placehold.co/300x300?text=No+Image";
                       }}
                     />
+                    {/* Action buttons on image hover / corner */}
                     <button
-                      type="button"
-                      className="favorite-heart active"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFavorite(product.id);
-                      }}
+                      className="btn-fav-remove"
+                      onClick={(e) => handleRemoveFavorite(e, product.id, product.name)}
                       title="Xóa khỏi yêu thích"
                     >
-                      <FontAwesomeIcon icon={icons.heart} />
+                      <FontAwesomeIcon icon={icons.trash} />
                     </button>
                   </div>
 
-                  <h2
-                    className="favorite-name"
-                    onClick={() => navigate(`/products/${product.slug || product.id}`)}
-                  >
-                    {product.name}
-                  </h2>
-                  <div className="favorite-price">
-                    {product.price !== null ? formatPrice(product.price) : "Chưa cập nhật giá"}
+                  {/* Card Content */}
+                  <div className="fav-info">
+                    <span className="fav-category">{product.category}</span>
+                    <h3 className="fav-name">{product.name}</h3>
+                    <div className="fav-footer">
+                      <span className="fav-price">{formatPrice(product.price)}</span>
+                      <button
+                        className="btn-fav-cart"
+                        onClick={(e) => handleAddToCart(e, product)}
+                        title="Thêm vào giỏ hàng"
+                      >
+                        <FontAwesomeIcon icon={icons.cart} /> Thêm vào giỏ
+                      </button>
+                    </div>
                   </div>
-                </article>
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="favorites-pagination">
-                <button
-                  type="button"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((page) => page - 1)}
-                >
-                  <FontAwesomeIcon icon={icons.chevronLeft} />
-                </button>
-                <span>
-                  Trang {currentPage} / {totalPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((page) => page + 1)}
-                >
-                  <FontAwesomeIcon icon={icons.chevronRight} />
-                </button>
+                </Link>
               </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
-      </section>
+      </div>
     </div>
   );
 };
