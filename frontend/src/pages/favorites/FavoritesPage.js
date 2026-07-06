@@ -11,7 +11,7 @@ import "../../styles/favorites/FavoritesPage.css";
 
 const FavoritesPage = () => {
   const { user, isAuthenticated, authLoaded } = useAuth();
-  const { favorites, toggleFavorite, refreshFavorites } = useFavorites();
+  const { favorites, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -19,13 +19,6 @@ const FavoritesPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // Tải danh sách yêu thích từ DB khi trang được mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      refreshFavorites();
-    }
-  }, [isAuthenticated]);
 
   // Tải danh sách sản phẩm từ backend và lọc
   useEffect(() => {
@@ -61,8 +54,10 @@ const FavoritesPage = () => {
       }
     };
 
-    loadProducts();
-  }, []);
+    if (authLoaded && isAuthenticated) {
+      loadProducts();
+    }
+  }, [authLoaded, isAuthenticated]);
 
   // Lọc sản phẩm đã thích từ danh sách ID trong localStorage
   const favoriteProducts = products.filter((p) => favorites.includes(p.id));

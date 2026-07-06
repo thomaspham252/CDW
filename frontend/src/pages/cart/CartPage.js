@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { FontAwesomeIcon, icons } from '../../utils/icons';
 import { formatPrice } from '../../utils/formatPrice';
+import { FREE_SHIPPING_THRESHOLD, getShippingFee } from '../../config/paymentConfig';
 import '../../styles/cart/CartPage.css';
 
 const CartPage = () => {
@@ -23,7 +24,7 @@ const CartPage = () => {
     const handleCheckout = () => {
         if (!isAuthenticated) {
             if (window.confirm('Bạn cần đăng nhập để thanh toán. Đăng nhập ngay?')) {
-                navigate('/login');
+                navigate('/login?redirect=checkout');
             }
             return;
         }
@@ -49,7 +50,7 @@ const CartPage = () => {
         );
     }
 
-    const shippingFee = getTotalPrice() >= 500000 ? 0 : 30000;
+    const shippingFee = getShippingFee(getTotalPrice());
     const finalTotal = getTotalPrice() + shippingFee;
 
     return (
@@ -190,7 +191,7 @@ const CartPage = () => {
                             {shippingFee > 0 && (
                                 <div className="shipping-note">
                                     <FontAwesomeIcon icon={icons.tag} />
-                                    Mua thêm {formatPrice(500000 - getTotalPrice())} để được miễn phí ship
+                                    Mua thêm {formatPrice(FREE_SHIPPING_THRESHOLD - getTotalPrice())} để được miễn phí ship
                                 </div>
                             )}
                             <div className="summary-divider" />

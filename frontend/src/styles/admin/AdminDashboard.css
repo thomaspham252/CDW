@@ -431,6 +431,9 @@
 }
 
 .status-select.pending { background: #fdf6e2; color: #d4a317; border: 1px solid #f5e7c4; }
+.status-select.pending_payment { background: #fff7ed; color: #c05621; border: 1px solid #fed7aa; }
+.status-select.cod_pending { background: #f1f2f6; color: #555; border: 1px solid #dfe3ea; }
+.status-select.paid { background: #ebfcf2; color: #1f9d55; border: 1px solid #c6f6d5; }
 .status-select.processing { background: #e3f2fd; color: #1e88e5; border: 1px solid #c8e1f5; }
 .status-select.shipped { background: #efe8fc; color: #7e57c2; border: 1px solid #dfd2f7; }
 .status-select.delivered { background: #eefdf3; color: #27ae60; border: 1px solid #d3f9e4; }
