@@ -126,7 +126,7 @@ export const useProductDetailPage = (id) => {
             mappedProduct.images[0] ||
             "https://placehold.co/600x600?text=No+Image",
         );
-        setIsFavorite(user ? await favoritesAPI.isFavorite(data.id) : false);
+        setIsFavorite(user ? favoritesAPI.isFavorite(data.id, user.id) : false);
 
         if (mappedProduct.colors && mappedProduct.colors.length > 0)
           setSelectedColor(mappedProduct.colors[0]);
@@ -265,7 +265,7 @@ export const useProductDetailPage = (id) => {
     }
     try {
       if (isFavorite) {
-        await favoritesAPI.removeFromFavorites(product.id);
+        await favoritesAPI.removeFromFavorites(product.id, user.id);
         await notificationsAPI.create(
           user.id,
           "system",
@@ -273,7 +273,7 @@ export const useProductDetailPage = (id) => {
         );
         addToast("Đã xóa khỏi yêu thích", "success");
       } else {
-        await favoritesAPI.addToFavorites(product.id);
+        await favoritesAPI.addToFavorites(product.id, user.id);
         await notificationsAPI.create(
           user.id,
           "system",

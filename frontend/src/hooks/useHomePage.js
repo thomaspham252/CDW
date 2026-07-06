@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "./useToast";
-import productService from "../services/productService";
 import { useFavorites } from "./useFavorites";
+import productService from "../services/productService";
 
 // DỮ LIỆU CỨNG CHO HOMEPAGE (KHI CHƯA CÓ DB)
 export const useHomePage = () => {
@@ -92,18 +92,20 @@ export const useHomePage = () => {
 
   const handleToggleFavorite = async (productId) => {
     if (!user) {
-      if (window.confirm("Vui lòng đăng nhập để thêm sản phẩm vào yêu thích. Bạn có muốn đăng nhập ngay bây giờ?")) {
+      const confirmLogin = window.confirm(
+        "Vui lòng đăng nhập để thêm sản phẩm vào yêu thích. Bạn có muốn đăng nhập ngay bây giờ?"
+      );
+      if (confirmLogin) {
         navigate("/login");
       }
       return;
     }
 
-    try {
-      const result = await toggleFavorite(productId);
+    const result = await toggleFavorite(productId);
+    if (result.success) {
       addToast(result.message, "success");
-    } catch (err) {
-      console.error(err);
-      addToast("Lỗi khi cập nhật yêu thích", "error");
+    } else {
+      addToast(result.message || "Lỗi khi cập nhật yêu thích", "error");
     }
   };
 

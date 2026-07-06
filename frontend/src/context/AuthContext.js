@@ -47,6 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   const saveUser = (data) => {
     const userInfo = {
+      id: data.userId,
       token: data.token,
       email: data.email,
       fullName: data.fullName,
