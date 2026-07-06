@@ -156,6 +156,18 @@ const AdminDashboard = () => {
         }
     };
 
+    const handlePaymentStatusChange = async (orderId, newStatus) => {
+        try {
+            await api.patch(`/api/admin/orders/${orderId}/payment-status?value=${newStatus}`);
+            setSuccessMessage(`Đã cập nhật trạng thái thanh toán đơn hàng #${orderId}.`);
+            fetchOrders();
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (err) {
+            console.error('Error updating payment status:', err);
+            setError('Không thể cập nhật trạng thái thanh toán.');
+        }
+    };
+
     // Open form for create
     const handleCreateProduct = () => {
         setEditingProduct(null);
@@ -365,6 +377,7 @@ const AdminDashboard = () => {
                                             <th>Hình thức</th>
                                             <th>Tổng tiền</th>
                                             <th>Trạng thái đơn hàng</th>
+                                            <th>Thanh toán</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -380,7 +393,7 @@ const AdminDashboard = () => {
                                                 <td>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
                                                 <td>
                                                     <span className={`payment-badge ${order.paymentMethod}`}>
-                                                        {order.paymentMethod === 'COD' ? 'COD' : 'Chuyển khoản'}
+                                                        {order.paymentMethod === 'COD' ? 'COD' : order.paymentMethod === 'VNPAY' ? 'VNPay' : 'QR'}
                                                     </span>
                                                 </td>
                                                 <td className="text-primary font-bold">{formatPrice(order.totalAmount)}</td>
@@ -390,14 +403,23 @@ const AdminDashboard = () => {
                                                         value={order.status}
                                                         onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
                                                     >
-                                                        <option value="pending_payment">Chờ thanh toán QR</option>
-                                                        <option value="cod_pending">Chờ xử lý COD</option>
-                                                        <option value="pending">Chờ xử lý (Pending)</option>
-                                                        <option value="paid">Đã thanh toán</option>
-                                                        <option value="processing">Đang chuẩn bị (Processing)</option>
-                                                        <option value="shipped">Đang vận chuyển (Shipped)</option>
-                                                        <option value="delivered">Đã giao hàng (Delivered)</option>
-                                                        <option value="cancelled">Đã hủy đơn (Cancelled)</option>
+                                                        <option value="WAITING_CONFIRMATION">Chờ xác nhận</option>
+                                                        <option value="WAITING_PICKUP">Chờ lấy hàng</option>
+                                                        <option value="SHIPPING">Chờ vận chuyển</option>
+                                                        <option value="DELIVERED">Đã giao hàng</option>
+                                                        <option value="CANCELLED">Đã hủy đơn</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select
+                                                        className={`status-select ${order.paymentStatus}`}
+                                                        value={order.paymentStatus || 'UNPAID'}
+                                                        onChange={(e) => handlePaymentStatusChange(order.id, e.target.value)}
+                                                    >
+                                                        <option value="UNPAID">Chờ thanh toán</option>
+                                                        <option value="PAID">Đã thanh toán</option>
+                                                        <option value="FAILED">Thanh toán lỗi</option>
+                                                        <option value="COD">COD</option>
                                                     </select>
                                                 </td>
                                             </tr>

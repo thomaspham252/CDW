@@ -370,6 +370,15 @@
 .status-select.shipped { background: #efe8fc; color: #7e57c2; border: 1px solid #dfd2f7; }
 .status-select.delivered { background: #eefdf3; color: #27ae60; border: 1px solid #d3f9e4; }
 .status-select.cancelled { background: #fff5f5; color: #e74c3c; border: 1px solid #ffd5d5; }
+.status-select.WAITING_CONFIRMATION { background: #fff7ed; color: #c05621; border: 1px solid #fed7aa; }
+.status-select.WAITING_PICKUP { background: #e3f2fd; color: #1e88e5; border: 1px solid #c8e1f5; }
+.status-select.SHIPPING { background: #efe8fc; color: #7e57c2; border: 1px solid #dfd2f7; }
+.status-select.DELIVERED { background: #eefdf3; color: #27ae60; border: 1px solid #d3f9e4; }
+.status-select.CANCELLED { background: #fff5f5; color: #e74c3c; border: 1px solid #ffd5d5; }
+.status-select.UNPAID { background: #fdf6e2; color: #d4a317; border: 1px solid #f5e7c4; }
+.status-select.PAID { background: #ebfcf2; color: #1f9d55; border: 1px solid #c6f6d5; }
+.status-select.FAILED { background: #fff5f5; color: #e74c3c; border: 1px solid #ffd5d5; }
+.status-select.COD { background: #f1f2f6; color: #555; border: 1px solid #dfe3ea; }
 
 /* ===== MODAL WINDOW ===== */
 .admin-modal-overlay {

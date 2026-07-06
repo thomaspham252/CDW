@@ -44,7 +44,9 @@ import {
     faComments,      // Chat
     faPaperPlane,    // Gửi tin nhắn
     faGlobe,         // Ngôn ngữ
-    faTrophy         // Điểm thưởng
+    faTrophy,        // Điểm thưởng
+    faMoneyBill,     // Tiền mặt/COD
+    faQrcode         // QR Code
 } from '@fortawesome/free-solid-svg-icons';
 
 import { faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
@@ -97,6 +99,8 @@ export const icons = {
     creditCard: faCreditCard,
     truck: faTruck,
     shield: faShieldAlt,
+    moneyBill: faMoneyBill,
+    qrcode: faQrcode,
 
     // Status
     clock: faClock,

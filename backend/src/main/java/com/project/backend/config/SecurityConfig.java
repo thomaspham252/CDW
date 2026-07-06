@@ -29,6 +29,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()          // login/register
                         .requestMatchers("/api/products/**").permitAll()  // xem sản phẩm không cần login
+                        .requestMatchers("/api/shipping/**").permitAll()
+                        .requestMatchers("/api/coupons/**").permitAll()
+                        .requestMatchers("/api/payment/vnpay-callback").permitAll()
                         .requestMatchers("/api/admin/**").authenticated() // admin phải login
                         .anyRequest().authenticated()
                 )

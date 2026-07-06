@@ -1,29 +1,25 @@
-import axios from "axios";
-
-const addressApi = axios.create({
-  baseURL: "https://provinces.open-api.vn/api",
-});
+import api from "./axiosInstance";
 
 const addressService = {
   getProvinces: async () => {
-    const response = await addressApi.get("/p/");
+    const response = await api.get("/api/shipping/provinces");
     return response.data;
   },
 
   getDistricts: async (provinceCode) => {
     if (!provinceCode) return [];
-    const response = await addressApi.get(`/p/${provinceCode}`, {
-      params: { depth: 2 },
+    const response = await api.get("/api/shipping/districts", {
+      params: { provinceId: provinceCode },
     });
-    return response.data.districts || [];
+    return response.data || [];
   },
 
   getWards: async (districtCode) => {
     if (!districtCode) return [];
-    const response = await addressApi.get(`/d/${districtCode}`, {
-      params: { depth: 2 },
+    const response = await api.get("/api/shipping/wards", {
+      params: { districtId: districtCode },
     });
-    return response.data.wards || [];
+    return response.data || [];
   },
 };
 

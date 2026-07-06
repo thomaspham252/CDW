@@ -49,6 +49,14 @@ public class Order {
     @Builder.Default
     private BigDecimal shippingFee = BigDecimal.ZERO;
 
+    @Column(name = "subtotal")
+    @Builder.Default
+    private BigDecimal subtotal = BigDecimal.ZERO;
+
+    @Column(name = "discount_amount")
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
@@ -57,7 +65,24 @@ public class Order {
 
     @Column(length = 50)
     @Builder.Default
-    private String status = "pending";
+    private String status = "WAITING_CONFIRMATION";
+
+    @Column(name = "payment_status", length = 50)
+    @Builder.Default
+    private String paymentStatus = "UNPAID";
+
+    @Column(name = "shipping_provider", length = 50)
+    @Builder.Default
+    private String shippingProvider = "GHN";
+
+    @Column(name = "ghn_service_id")
+    private Integer ghnServiceId;
+
+    @Column(name = "ghn_district_id")
+    private Integer ghnDistrictId;
+
+    @Column(name = "ghn_ward_code", length = 20)
+    private String ghnWardCode;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

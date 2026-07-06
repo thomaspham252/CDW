@@ -12,7 +12,7 @@ const Footer = () => {
                 <div className="footer-top">
                     {/* About Section */}
                     <div className="footer-section">
-                        <h3 className="footer-title">Về TTH Shop</h3>
+                        <h3 className="footer-title">Về CDW Handmade</h3>
                         <p className="footer-description">
                             Chuyên cung cấp các sản phẩm handmade chất lượng cao,
                             được làm thủ công với tình yêu và sự tận tâm.
@@ -100,7 +100,7 @@ const Footer = () => {
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                                 </svg>
-                                <span>info@tthshop.com</span>
+                                <span>info@cdwhandmade.com</span>
                             </li>
                         </ul>
                     </div>
@@ -109,10 +109,10 @@ const Footer = () => {
                 {/* Footer Bottom */}
                 <div className="footer-bottom">
                     <p className="footer-copyright">
-                        &copy; {currentYear} TTH Shop - Handmade. Tất cả quyền được bảo lưu.
+                        &copy; {currentYear} CDW Handmade. Tất cả quyền được bảo lưu.
                     </p>
                     <p className="footer-made-with">
-                        Made with <span className="heart">❤️</span> by TTH Team
+                        Made with <span className="heart">❤️</span> by CDW Team
                     </p>
                 </div>
             </div>

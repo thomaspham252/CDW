@@ -28,7 +28,7 @@ const BlogPage = () => {
             {/* Banner */}
             <div className="blog-banner">
                 <h1>Góc Sáng Tạo & Chia Sẻ</h1>
-                <p>Nơi TTH Shop gửi gắm những câu chuyện về thế giới handmade, những hướng dẫn tự làm đồ thủ công tỉ mỉ và ý tưởng quà tặng đong đầy tình cảm.</p>
+                <p>Nơi CDW Handmade gửi gắm những câu chuyện về thế giới handmade, những hướng dẫn tự làm đồ thủ công tỉ mỉ và ý tưởng quà tặng đong đầy tình cảm.</p>
             </div>
 
             <div className="blog-layout">

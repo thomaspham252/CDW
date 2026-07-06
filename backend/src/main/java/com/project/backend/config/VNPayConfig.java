@@ -5,11 +5,21 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 @Component
 public class VNPayConfig {
+
+    public static String urlEncode(String value) {
+        try {
+            if (value == null) return "";
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.toString()).replace("+", "%20");
+        } catch (Exception e) {
+            return "";
+        }
+    }
 
     @Value("${vnp.tmncode}")
     private String tmnCode;

@@ -51,6 +51,7 @@ public class WishlistController {
                 .map(productMapper::toSummary)
                 .collect(Collectors.toList());
 
+        products.forEach(p -> System.out.println("[Wishlist DEBUG] id=" + p.getId() + " name=" + p.getName() + " mainUrl=" + p.getMainUrl()));
         return ResponseEntity.ok(products);
     }
 
