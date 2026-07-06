@@ -77,10 +77,11 @@ export const useHomePage = () => {
   const handleAddToCart = async (productId) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
+    const variantId = product.defaultVariantId || product.variantId || product.id;
     addToCart(
       {
-        id: product.id,
-        variantId: product.defaultVariantId || product.id,
+        id: variantId,
+        variantId: variantId,
         name: product.name,
         slug: product.slug,
         image: product.image,

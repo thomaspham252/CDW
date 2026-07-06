@@ -56,6 +56,8 @@ public class ProductMapper {
         String mainUrl = null;
         BigDecimal price = null;
         BigDecimal basePrice = null;
+        Integer variantId = null;
+        Integer defaultVariantId = null;
         // Tìm variant có giá thấp nhất; nếu dữ liệu cũ thiếu price thì vẫn fallback variant đầu tiên.
         if (product.getVariants() != null && !product.getVariants().isEmpty()) {
             ProductVariant cheapestVariant = product.getVariants().stream()

@@ -180,7 +180,7 @@ const CheckoutPage = () => {
                     toWardCode: selectedWardCode,
                     insuranceValue: subtotal,
                     items: cart.map(item => ({
-                        variantId: item.id,
+                        variantId: item.variantId || item.id,
                         quantity: item.quantity
                     }))
                 });

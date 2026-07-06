@@ -373,7 +373,7 @@ public class OrderServiceImpl implements OrderService {
             vnpParams.put("vnp_TxnRef", String.valueOf(savedOrder.getId()));
             vnpParams.put("vnp_OrderInfo", "Thanh toan don hang " + savedOrder.getId());
             vnpParams.put("vnp_OrderType", "other");
-            vnpParams.put("vnp_Locale", "vn");
+            vnpParams.put("vnp_Locale", "vi");
             vnpParams.put("vnp_ReturnUrl", vnpayConfig.getReturnUrl());
             vnpParams.put("vnp_IpAddr", VNPayConfig.getIpAddress(servletRequest));
 
@@ -391,7 +391,7 @@ public class OrderServiceImpl implements OrderService {
                     if (hashData.length() > 0) {
                         hashData.append('&');
                     }
-                    hashData.append(fieldName).append('=').append(fieldValue);
+                    hashData.append(fieldName).append('=').append(VNPayConfig.urlEncode(fieldValue));
 
                     if (query.length() > 0) {
                         query.append('&');
@@ -402,8 +402,13 @@ public class OrderServiceImpl implements OrderService {
                 }
             }
 
+            System.out.println(">>> VNPAY Secret Key: [" + vnpayConfig.getHashSecret() + "] <<<");
+            System.out.println(">>> VNPAY HashData: [" + hashData.toString() + "] <<<");
             String secureHash = VNPayConfig.hmacSHA512(vnpayConfig.getHashSecret(), hashData.toString());
-            return vnpayConfig.getVnpUrl() + "?" + query + "&vnp_SecureHash=" + secureHash;
+            System.out.println(">>> VNPAY SecureHash: [" + secureHash + "] <<<");
+            String finalUrl = vnpayConfig.getVnpUrl() + "?" + query + "&vnp_SecureHash=" + secureHash;
+            System.out.println(">>> VNPAY Final URL: [" + finalUrl + "] <<<");
+            return finalUrl;
         } catch (Exception e) {
             System.err.println("Error generating VNPAY URL: " + e.getMessage());
             return null;
@@ -413,8 +418,6 @@ public class OrderServiceImpl implements OrderService {
     private Order getOrder(Integer id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with id: " + id));
-        Order updatedOrder = orderRepository.save(order);
-        return mapToOrderResponse(updatedOrder);
     }
 
     private Order getOwnedOrder(Integer id, User currentUser) {
