@@ -59,6 +59,7 @@ const FavoritesPage = () => {
 
             return {
             id: product.id,
+            variantId: product.variantId || catalogProduct.variantId,
             name: catalogProduct.name || product.name,
             slug: catalogProduct.slug || product.slug,
             image,

@@ -56,6 +56,7 @@ public class ProductMapper {
         String mainUrl = null;
         BigDecimal price = null;
         BigDecimal basePrice = null;
+        Integer variantId = null;
 
         // Tìm variant có giá thấp nhất; nếu dữ liệu cũ thiếu price thì vẫn fallback variant đầu tiên.
         if (product.getVariants() != null && !product.getVariants().isEmpty()) {
@@ -65,6 +66,7 @@ public class ProductMapper {
                     .orElseGet(() -> product.getVariants().stream().findFirst().orElse(null));
 
             if (cheapestVariant != null) {
+                variantId = cheapestVariant.getId();
                 price = cheapestVariant.getPrice();
                 basePrice = cheapestVariant.getBasePrice();
 
@@ -84,10 +86,12 @@ public class ProductMapper {
                 .id(product.getId())
                 .name(product.getName())
                 .slug(product.getSlug())
+                .variantId(variantId)
                 .mainUrl(mainUrl)       // URL ảnh chính (null nếu chưa có ảnh)
                 .price(price)           // Giá thấp nhất
                 .basePrice(basePrice)   // Giá gốc (để hiển thị giảm giá)
                 .isActive(product.getIsActive())
+                .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .build();
     }

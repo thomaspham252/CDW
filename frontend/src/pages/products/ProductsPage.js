@@ -10,7 +10,6 @@ const ProductsPage = () => {
         loading,
         error,
         searchKeyword,
-        setSearchKeyword,
         selectedCategory,
         sortBy,
         categories,
@@ -26,14 +25,12 @@ const ProductsPage = () => {
         paginatedProducts,
         handlePageChange,
         handleClearFilters,
-        handleSearch,
         handleCategoryChange,
         handleSortChange,
         handleAddToCart,
         handleToggleFavorite,
         handleProductClick,
         itemsPerPage,
-        products,
         isFavorite
     } = useProductsPage();
 
@@ -52,12 +49,6 @@ const ProductsPage = () => {
             </div>
         );
     }
-
-    // Tính giá min/max từ products
-    const priceRange = products.length > 0 ? {
-        min: Math.min(...products.map(p => p.price)),
-        max: Math.max(...products.map(p => p.price))
-    } : { min: 0, max: 1000000 };
 
     return (
         <div className="products-page">
@@ -151,11 +142,11 @@ const ProductsPage = () => {
                                 </button>
                                 {categories.map(cat => (
                                     <button
-                                        key={cat}
-                                        className={`category-item ${selectedCategory === cat ? 'active' : ''}`}
+                                        key={cat.id || cat.slug || cat.name}
+                                        className={`category-item ${selectedCategory === cat.name ? 'active' : ''}`}
                                         onClick={() => handleCategoryChange(cat)}
                                     >
-                                        {cat}
+                                        {cat.name}
                                     </button>
                                 ))}
                             </div>

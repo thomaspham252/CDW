@@ -82,6 +82,7 @@
     text-align: left;
     transition: all 0.2s ease;
     width: 100%;
+    text-decoration: none;
 }
 
 .profile-menu-item:hover {
