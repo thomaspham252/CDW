@@ -30,12 +30,12 @@ export const useReviews = (productId) => {
     }, [productId]);
 
     const submitReview = async (rating, comment, media, reviewId) => {
-        console.log('Submitting review:', { rating, comment, media, reviewId });
+        // TODO: Implement review submission API call
         return true;
     };
 
     const deleteReview = async (reviewId) => {
-        console.log('Deleting review:', reviewId);
+        // TODO: Implement review deletion API call
         return true;
     };
 

@@ -15,7 +15,7 @@ public class VNPayConfig {
     public static String urlEncode(String value) {
         try {
             if (value == null) return "";
-            return URLEncoder.encode(value, StandardCharsets.UTF_8.toString()).replace("+", "%20");
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
         } catch (Exception e) {
             return "";
         }

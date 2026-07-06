@@ -1,6 +1,7 @@
 export const useToast = () => {
     const addToast = (message, type) => {
-        console.log(`Toast [${type}]: ${message}`);
+        // TODO: Implement UI toast notification system
+        // Consider using libraries like react-toastify or custom implementation
     };
     return { addToast };
 };

@@ -112,7 +112,6 @@ export const useProductDetailPage = (id) => {
           description: data.description || "Chưa có mô tả",
           category: data.categoryName || "Chưa phân loại",
           rating: 5, // Backend chưa có rating
-          variants: data.variants || [],
           image: null,
           images: [],
           price: 0,
@@ -228,6 +227,15 @@ export const useProductDetailPage = (id) => {
     }
   }, [isTypeDropdownOpen]);
 
+  const selectedVariant = useMemo(() => {
+    if (!product?.variants?.length) return null;
+    return product.variants.find((variant) => {
+      const matchColor = !selectedColor || variant.color === selectedColor;
+      const matchSize = !selectedType || variant.size === selectedType;
+      return matchColor && matchSize;
+    }) || product.variants[0];
+  }, [product, selectedColor, selectedType]);
+
   const handleAddToCart = async () => {
     if (!product) return;
     if (product.colors?.length > 0 && !selectedColor)
@@ -243,6 +251,9 @@ export const useProductDetailPage = (id) => {
       // Truyền object đầy đủ vào CartContext
       addToCart(
         {
+          id: selectedVariant?.id || product.id,
+          productId: product.id,
+          variantId: selectedVariant?.id || product.id,
           name: product.name,
           slug: product.slug,
           image: product.image,

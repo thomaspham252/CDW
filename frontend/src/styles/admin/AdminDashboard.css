@@ -380,6 +380,53 @@
 .status-select.FAILED { background: #fff5f5; color: #e74c3c; border: 1px solid #ffd5d5; }
 .status-select.COD { background: #f1f2f6; color: #555; border: 1px solid #dfe3ea; }
 
+.admin-simple-chart {
+    align-items: flex-end;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(12, minmax(34px, 1fr));
+    min-height: 240px;
+    overflow-x: auto;
+    padding: 1rem 0.5rem 0;
+}
+
+.admin-simple-chart-col {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    justify-content: flex-end;
+    min-width: 34px;
+}
+
+.admin-simple-chart-value {
+    color: #64748b;
+    font-size: 0.72rem;
+    min-height: 1rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.admin-simple-chart-bar {
+    border-radius: 6px 6px 0 0;
+    min-height: 6px;
+    width: 100%;
+}
+
+.admin-simple-chart-bar.revenue {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+
+.admin-simple-chart-bar.orders {
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.admin-simple-chart-col span {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
 /* ===== MODAL WINDOW ===== */
 .admin-modal-overlay {
     position: fixed;

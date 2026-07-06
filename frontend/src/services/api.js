@@ -35,11 +35,9 @@ export const favoritesAPI = {
 };
 
 export const notificationsAPI = {
-  getUnreadCount: () => Promise.resolve(5),
+  getUnreadCount: () => Promise.resolve(0),
   create: (userId, type, message) => {
-    console.log(
-      `Notification created for user ${userId}: [${type}] ${message}`,
-    );
+    // TODO: Implement actual notification API endpoints when backend is ready
     return Promise.resolve(true);
   },
 };

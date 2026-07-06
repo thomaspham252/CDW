@@ -63,11 +63,12 @@ public class PaymentController {
             for (String fieldName : fieldNames) {
                 String fieldValue = fields.get(fieldName);
                 if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    // hashData: KHÔNG encode - dùng giá trị gốc để verify chữ ký
                     if (hashData.length() > 0) {
                         hashData.append('&');
                     }
-                    hashData.append(fieldName).append('=').append(fieldValue);
+                    hashData.append(fieldName)
+                            .append('=')
+                            .append(VNPayConfig.urlEncode(fieldValue));
                 }
             }
 
