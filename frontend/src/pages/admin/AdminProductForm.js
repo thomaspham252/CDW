@@ -17,17 +17,56 @@ const AdminProductForm = ({ product, categories, onClose, onSuccess }) => {
     const [size, setSize] = useState('');
     const [imageUrl, setImageUrl] = useState('');
 
+    const [variantId, setVariantId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     // Pre-fill if editing
     useEffect(() => {
+        const loadProductDetails = async () => {
+            if (isEdit && product) {
+                try {
+                    setLoading(true);
+                    setError('');
+                    const res = await api.get(`/api/admin/products/${product.id}`);
+                    const fullProduct = res.data;
+                    setName(fullProduct.name || '');
+                    setSlug(fullProduct.slug || '');
+                    setDescription(fullProduct.description || '');
+                    setCategoryId(fullProduct.categoryId || '');
+                    setIsActive(fullProduct.isActive !== false);
+
+                    if (fullProduct.variants && fullProduct.variants.length > 0) {
+                        const firstVariant = fullProduct.variants[0];
+                        setVariantId(firstVariant.id);
+                        setPrice(firstVariant.price || 0);
+                        setBasePrice(firstVariant.basePrice || 0);
+                        setSize(firstVariant.size || 'Mặc định');
+
+                        if (firstVariant.images && firstVariant.images.length > 0) {
+                            const mainImage = firstVariant.images.find(img => img.isMain) || firstVariant.images[0];
+                            setImageUrl(mainImage.imgUrl || '');
+                        } else {
+                            setImageUrl('');
+                        }
+                    } else {
+                        setVariantId(null);
+                        setPrice(0);
+                        setBasePrice(0);
+                        setSize('Mặc định');
+                        setImageUrl('');
+                    }
+                } catch (err) {
+                    console.error('Error loading product details:', err);
+                    setError('Không thể tải chi tiết sản phẩm.');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
         if (isEdit && product) {
-            setName(product.name || '');
-            setSlug(product.slug || '');
-            setDescription(product.description || '');
-            setCategoryId(product.categoryId || '');
-            setIsActive(product.isActive !== false);
+            loadProductDetails();
         } else {
             // Defaults for new product
             setName('');
@@ -39,6 +78,7 @@ const AdminProductForm = ({ product, categories, onClose, onSuccess }) => {
             setBasePrice(0);
             setSize('Mặc định');
             setImageUrl('');
+            setVariantId(null);
         }
     }, [product, isEdit, categories]);
 
@@ -89,6 +129,22 @@ const AdminProductForm = ({ product, categories, onClose, onSuccess }) => {
         }
 
         try {
+            if (price < 0 || basePrice < 0) {
+                setError('Giá bán và giá gốc không được âm.');
+                setLoading(false);
+                return;
+            }
+            if (basePrice > 0 && basePrice < price) {
+                setError('Giá gốc phải lớn hơn hoặc bằng giá bán.');
+                setLoading(false);
+                return;
+            }
+            if (!imageUrl) {
+                setError('Vui lòng cung cấp link hình ảnh sản phẩm.');
+                setLoading(false);
+                return;
+            }
+
             if (isEdit) {
                 // Update basic info
                 const payload = {
@@ -99,6 +155,22 @@ const AdminProductForm = ({ product, categories, onClose, onSuccess }) => {
                     isActive
                 };
                 await api.put(`/api/admin/products/${product.id}`, payload);
+
+                const variantPayload = {
+                    price: parseFloat(price),
+                    basePrice: parseFloat(basePrice) || parseFloat(price),
+                    size: size || 'Mặc định',
+                    image: {
+                        image: imageUrl,
+                        isMain: true
+                    }
+                };
+
+                if (variantId) {
+                    await api.put(`/api/admin/variants/${variantId}`, variantPayload);
+                } else {
+                    await api.post(`/api/admin/products/${product.id}/variants`, variantPayload);
+                }
             } else {
                 // Create product with variant and image
                 if (price < 0 || basePrice < 0) {
@@ -138,7 +210,9 @@ const AdminProductForm = ({ product, categories, onClose, onSuccess }) => {
             onSuccess();
         } catch (err) {
             console.error('Error saving product:', err);
-            setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu sản phẩm. Vui lòng kiểm tra lại dữ liệu.');
+            const backendMsg = err.response?.data?.message;
+            const errorDetails = err.response?.data?.error || err.message;
+            setError(backendMsg || `Lỗi: ${errorDetails} (Vui lòng kiểm tra dữ liệu)`);
         } finally {
             setLoading(false);
         }
@@ -221,60 +295,58 @@ const AdminProductForm = ({ product, categories, onClose, onSuccess }) => {
                         </div>
 
                         {/* Section 2: Pricing & Media (Only for Create Product) */}
-                        {!isEdit && (
-                            <div className="form-col-section border-left">
-                                <h3>Biến thể & Hình ảnh</h3>
-                                
-                                <div className="form-group-row col-2">
-                                    <div className="form-group">
-                                        <label>Giá bán (VNĐ) *</label>
-                                        <input 
-                                            type="number" 
-                                            value={price} 
-                                            onChange={(e) => setPrice(e.target.value)} 
-                                            min="0"
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Giá gốc (để gạch đi, VNĐ)</label>
-                                        <input 
-                                            type="number" 
-                                            value={basePrice} 
-                                            onChange={(e) => setBasePrice(e.target.value)} 
-                                            min="0"
-                                        />
-                                    </div>
-                                </div>
-
+                        <div className="form-col-section border-left">
+                            <h3>Biến thể & Hình ảnh</h3>
+                            
+                            <div className="form-group-row col-2">
                                 <div className="form-group">
-                                    <label>Phân loại / Size *</label>
+                                    <label>Giá bán (VNĐ) *</label>
                                     <input 
-                                        type="text" 
-                                        value={size} 
-                                        onChange={(e) => setSize(e.target.value)} 
-                                        placeholder="Ví dụ: Nhỏ / Lớn, Đỏ / Trắng" 
+                                        type="number" 
+                                        value={price} 
+                                        onChange={(e) => setPrice(e.target.value)} 
+                                        min="0"
                                         required 
                                     />
                                 </div>
-
                                 <div className="form-group">
-                                    <label>Đường dẫn ảnh sản phẩm (Link URL) *</label>
+                                    <label>Giá gốc (để gạch đi, VNĐ)</label>
                                     <input 
-                                        type="url" 
-                                        value={imageUrl} 
-                                        onChange={(e) => setImageUrl(e.target.value)} 
-                                        placeholder="https://images.unsplash.com/..." 
-                                        required 
+                                        type="number" 
+                                        value={basePrice} 
+                                        onChange={(e) => setBasePrice(e.target.value)} 
+                                        min="0"
                                     />
-                                    {imageUrl && (
-                                        <div className="image-preview-box">
-                                            <img src={imageUrl} alt="Preview" onError={(e) => e.target.src = 'https://placehold.co/100x100?text=L%E1%BB%97i+Ảnh'} />
-                                        </div>
-                                    )}
                                 </div>
                             </div>
-                        )}
+
+                            <div className="form-group">
+                                <label>Phân loại / Size *</label>
+                                <input 
+                                    type="text" 
+                                    value={size} 
+                                    onChange={(e) => setSize(e.target.value)} 
+                                    placeholder="Ví dụ: Nhỏ / Lớn, Đỏ / Trắng" 
+                                    required 
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Đường dẫn ảnh sản phẩm (Link URL) *</label>
+                                <input 
+                                    type="url" 
+                                    value={imageUrl} 
+                                    onChange={(e) => setImageUrl(e.target.value)} 
+                                    placeholder="https://images.unsplash.com/..." 
+                                    required 
+                                />
+                                {imageUrl && (
+                                    <div className="image-preview-box">
+                                        <img src={imageUrl} alt="Preview" onError={(e) => e.target.src = 'https://placehold.co/100x100?text=L%E1%BB%97i+Ảnh'} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="modal-actions">

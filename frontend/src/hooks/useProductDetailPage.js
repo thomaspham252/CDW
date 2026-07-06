@@ -13,7 +13,7 @@ export const useProductDetailPage = (id) => {
   const { user } = useAuth();
   const { addToast } = useToast();
 
-  const [product, setProduct] = useState(null);
+  const [rawProduct, setRawProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
@@ -27,6 +27,31 @@ export const useProductDetailPage = (id) => {
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+  
+  // Dynamic product mapping with stock calculated based on selected variants
+  const product = useMemo(() => {
+    if (!rawProduct) return null;
+    let currentStock = 0;
+    
+    // Find the variant that matches the currently selected color and type/size
+    const matchedVariant = rawProduct.variants.find(v => {
+      const matchColor = !selectedColor || v.color === selectedColor;
+      const matchSize = !selectedType || v.size === selectedType;
+      return matchColor && matchSize;
+    });
+
+    if (matchedVariant) {
+      currentStock = matchedVariant.stock !== null && matchedVariant.stock !== undefined ? matchedVariant.stock : 50;
+    } else if (rawProduct.variants && rawProduct.variants.length > 0) {
+      // Fallback: sum of all variants stock
+      currentStock = rawProduct.variants.reduce((sum, v) => sum + (v.stock !== null && v.stock !== undefined ? v.stock : 50), 0);
+    }
+
+    return {
+      ...rawProduct,
+      stock: currentStock
+    };
+  }, [rawProduct, selectedColor, selectedType]);
 
   // Reviews hook integration
   const productId = id ? parseInt(id) : null;
@@ -87,7 +112,7 @@ export const useProductDetailPage = (id) => {
           description: data.description || "Chưa có mô tả",
           category: data.categoryName || "Chưa phân loại",
           rating: 5, // Backend chưa có rating
-          stock: 10, // Backend chưa có stock
+          variants: data.variants || [],
           image: null,
           images: [],
           price: 0,
@@ -129,7 +154,7 @@ export const useProductDetailPage = (id) => {
           mappedProduct.colors = [...new Set(colors)];
         }
 
-        setProduct(mappedProduct);
+        setRawProduct(mappedProduct);
         setActiveImage(
           mappedProduct.image ||
             mappedProduct.images[0] ||
@@ -215,21 +240,9 @@ export const useProductDetailPage = (id) => {
 
     try {
       setAdding(true);
-      const selectedVariant =
-        product.variants?.find(
-          (variant) =>
-            (!selectedType || variant.size === selectedType) &&
-            (!selectedColor || variant.color === selectedColor),
-        ) ||
-        product.variants?.[0] ||
-        null;
-
       // Truyền object đầy đủ vào CartContext
       addToCart(
         {
-          id: selectedVariant?.id || product.id,
-          productId: product.id,
-          variantId: selectedVariant?.id,
           name: product.name,
           slug: product.slug,
           image: product.image,

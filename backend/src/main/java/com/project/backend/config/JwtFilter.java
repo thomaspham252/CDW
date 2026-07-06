@@ -66,17 +66,39 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
-        // 6. Kiểm tra quyền truy cập Admin cho các endpoint /api/admin/**
+        // 6. Kiểm tra quyền truy cập Admin/Staff cho các endpoint /api/admin/**
         String path = request.getRequestURI();
         if (path.startsWith("/api/admin/")) {
             var auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof User) {
                 User principal = (User) auth.getPrincipal();
-                if (principal.getRole() == null || !principal.getRole().equalsIgnoreCase("ADMIN")) {
+                String role = principal.getRole();
+                if (role == null) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write("{\"message\": \"Access denied. Only the administrator is allowed.\"}");
+                    response.getWriter().write("{\"message\": \"Access denied. Role not found.\"}");
                     return;
+                }
+
+                boolean isAdmin = role.equalsIgnoreCase("ADMIN");
+                boolean isStaff = role.equalsIgnoreCase("STAFF");
+
+                // Analytics và Users chỉ dành cho ADMIN tối cao
+                if (path.startsWith("/api/admin/analytics") || path.startsWith("/api/admin/users")) {
+                    if (!isAdmin) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"message\": \"Access denied. Only the administrator is allowed to view analytics or manage users.\"}");
+                        return;
+                    }
+                } else {
+                    // Các endpoints khác (products, variants, orders, vouchers) cho phép cả ADMIN và STAFF
+                    if (!isAdmin && !isStaff) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"message\": \"Access denied. Only administrator or staff are allowed.\"}");
+                        return;
+                    }
                 }
             }
         }

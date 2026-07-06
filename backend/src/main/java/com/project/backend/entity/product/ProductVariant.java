@@ -9,10 +9,11 @@ import java.util.Set;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
 @Getter
 @Setter
 @Builder
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"images", "product"})
 @Table(name = "product_variants")
 public class ProductVariant {
     @Id
@@ -37,5 +38,9 @@ public class ProductVariant {
     // Danh sách ảnh thuộc biến thể này (is_main = true là ảnh chính)
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<ProductImage> images;
+
+    @Column(name = "stock")
+    @Builder.Default
+    private Integer stock = 50;
 
 }

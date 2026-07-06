@@ -56,8 +56,6 @@ public class ProductMapper {
         String mainUrl = null;
         BigDecimal price = null;
         BigDecimal basePrice = null;
-        Integer variantId = null;
-
         // Tìm variant có giá thấp nhất; nếu dữ liệu cũ thiếu price thì vẫn fallback variant đầu tiên.
         if (product.getVariants() != null && !product.getVariants().isEmpty()) {
             ProductVariant cheapestVariant = product.getVariants().stream()
@@ -69,6 +67,7 @@ public class ProductMapper {
                 variantId = cheapestVariant.getId();
                 price = cheapestVariant.getPrice();
                 basePrice = cheapestVariant.getBasePrice();
+                defaultVariantId = cheapestVariant.getId();
 
                 mainUrl = findImageUrl(cheapestVariant);
             }
@@ -80,6 +79,12 @@ public class ProductMapper {
                         .findFirst()
                         .orElse(null);
             }
+        }
+        int totalStock = 0;
+        if (product.getVariants() != null) {
+            totalStock = product.getVariants().stream()
+                    .mapToInt(v -> v.getStock() != null ? v.getStock() : 50)
+                    .sum();
         }
 
         return ProductSummaryResponse.builder()
@@ -93,6 +98,8 @@ public class ProductMapper {
                 .isActive(product.getIsActive())
                 .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
+                .stock(totalStock)
+                .defaultVariantId(defaultVariantId)
                 .build();
     }
 
@@ -159,6 +166,7 @@ public class ProductMapper {
         response.setBasePrice(variant.getBasePrice());
         response.setSize(variant.getSize());
         response.setColor(variant.getColor());
+        response.setStock(variant.getStock());
 
         // Map tất cả images
         if (variant.getImages() != null) {
@@ -198,6 +206,7 @@ public class ProductMapper {
                 .basePrice(BigDecimal.valueOf(req.getBasePrice()))   // giá gốc (trước khuyến mãi)
                 .size(req.getSize())
                 .color(req.getColor())
+                .stock(req.getStock() != null ? req.getStock() : 50)
                 // product sẽ được set ở Service: variant.setProduct(savedProduct)
                 .build();
     }

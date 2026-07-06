@@ -143,8 +143,6 @@ const ProfilePage = () => {
           image: p.mainUrl || p.imgUrl || p.img_url || "https://placehold.co/300x300?text=No+Image",
           price: p.price ? parseFloat(p.price) : 0,
           category: p.categoryName || "Chưa phân loại",
-        }));
-
       setFavoriteProducts(mappedFavs);
     } catch (err) {
       console.error("Lỗi lấy sản phẩm yêu thích:", err);
@@ -394,6 +392,7 @@ const ProfilePage = () => {
       addToCart(
         {
           id: item.variantId,
+          variantId: item.variantId,
           name: item.productName,
           slug: item.productSlug,
           image: item.imageUrl,
@@ -420,9 +419,6 @@ const ProfilePage = () => {
   const handleAddFavToCart = (product) => {
     addToCart(
       {
-        id: product.variantId || product.id,
-        productId: product.id,
-        variantId: product.variantId,
         name: product.name,
         slug: product.slug,
         image: product.image,

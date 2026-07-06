@@ -20,4 +20,6 @@ public class ProductSummaryResponse {
     private Boolean isActive;
     private Integer categoryId;
     private String categoryName;
+    private Integer stock;
+    private Integer defaultVariantId;
 }
