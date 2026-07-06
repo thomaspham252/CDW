@@ -207,8 +207,12 @@ const CheckoutPage = () => {
 
         try {
             const response = await api.post('/api/orders', orderPayload);
-            setOrderSuccess(response.data);
             clearCart(); // Clear the cart after order created successfully
+            if (paymentMethod === 'VNPAY' && response.data.paymentUrl) {
+                window.location.href = response.data.paymentUrl;
+            } else {
+                setOrderSuccess(response.data);
+            }
         } catch (err) {
             console.error('Error creating order:', err);
             setError(err.response?.data?.message || 'Có lỗi xảy ra trong quá trình đặt hàng. Vui lòng thử lại.');
@@ -464,6 +468,21 @@ const CheckoutPage = () => {
                                 <label htmlFor="method-cod">
                                     <span className="payment-option-title">Thanh toán khi nhận hàng (COD)</span>
                                     <span className="payment-option-desc">Thanh toán bằng tiền mặt khi shipper giao hàng đến nơi.</span>
+                                </label>
+                            </div>
+
+                            <div className={`payment-option ${paymentMethod === 'VNPAY' ? 'active' : ''}`} onClick={() => setPaymentMethod('VNPAY')}>
+                                <input 
+                                    type="radio" 
+                                    id="method-vnpay" 
+                                    name="paymentMethod" 
+                                    value="VNPAY" 
+                                    checked={paymentMethod === 'VNPAY'}
+                                    onChange={() => setPaymentMethod('VNPAY')}
+                                />
+                                <label htmlFor="method-vnpay">
+                                    <span className="payment-option-title">Thanh toán qua VNPAY</span>
+                                    <span className="payment-option-desc">Thanh toán trực tuyến an toàn qua cổng thanh toán VNPAY (ATM, Thẻ quốc tế, QR).</span>
                                 </label>
                             </div>
                         </div>

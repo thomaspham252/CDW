@@ -10,7 +10,7 @@ import productService from "../../services/productService";
 import "../../styles/favorites/FavoritesPage.css";
 
 const FavoritesPage = () => {
-  const { user, isAuthenticated, authLoaded } = useAuth();
+  const { isAuthenticated, authLoaded } = useAuth();
   const { favorites, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
   const { addToast } = useToast();

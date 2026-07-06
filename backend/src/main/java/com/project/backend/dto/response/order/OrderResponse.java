@@ -27,4 +27,5 @@ public class OrderResponse {
     private String status;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
+    private String paymentUrl;
 }

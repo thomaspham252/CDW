@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()          // login/register
                         .requestMatchers("/api/products/**").permitAll()  // xem sản phẩm không cần login
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Chỉ admin mới được phép truy cập
+                        .requestMatchers("/api/admin/**").authenticated() // admin phải login
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

@@ -53,7 +53,6 @@ export const useProductsPage = () => {
   const [error, setError] = useState("");
   const { addToCart } = useCart();
   const { user } = useAuth();
-  const userId = user?.id || user?.userId;
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToast } = useToast();
 
@@ -247,9 +246,9 @@ export const useProductsPage = () => {
         1,
       );
 
-      if (userId)
+      if (user)
         await notificationsAPI.create(
-          userId,
+          user.id,
           "order",
           "Đã thêm sản phẩm vào giỏ hàng",
         );
@@ -273,7 +272,7 @@ export const useProductsPage = () => {
 
     const result = await toggleFavorite(productId);
     if (result.success) {
-      if (userId) await notificationsAPI.create(userId, "system", result.message);
+      await notificationsAPI.create(user.id, "system", result.message);
       addToast(result.message, "success");
     } else {
       console.error(result.message);
