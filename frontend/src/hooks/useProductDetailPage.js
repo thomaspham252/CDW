@@ -115,7 +115,6 @@ export const useProductDetailPage = (id) => {
           image: null,
           images: [],
           price: 0,
-          variants: [],
           colors: [],
           types: [],
         };
@@ -246,6 +245,14 @@ export const useProductDetailPage = (id) => {
     if (quantity > product.stock)
       return alert(`Chỉ còn ${product.stock} sản phẩm trong kho`);
 
+    const matchedVariant = rawProduct.variants.find(v => {
+      const matchColor = !selectedColor || v.color === selectedColor;
+      const matchSize = !selectedType || v.size === selectedType;
+      return matchColor && matchSize;
+    });
+
+    const variantId = matchedVariant ? matchedVariant.id : (rawProduct.variants?.[0]?.id || product.id);
+
     try {
       setAdding(true);
       // Truyền object đầy đủ vào CartContext
@@ -257,7 +264,7 @@ export const useProductDetailPage = (id) => {
           name: product.name,
           slug: product.slug,
           image: product.image,
-          price: selectedVariant?.price || product.price,
+          price: matchedVariant?.price || product.price,
           size: selectedType || selectedColor || null,
         },
         quantity,
