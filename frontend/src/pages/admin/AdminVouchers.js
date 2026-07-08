@@ -3,13 +3,12 @@ import { FontAwesomeIcon, icons } from '../../utils/icons';
 import { formatPrice } from '../../utils/formatPrice';
 import api from '../../services/axiosInstance';
 
-const AdminVouchers = () => {
+const AdminVouchers = ({ readOnly = false }) => {
     const [vouchers, setVouchers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    // Form states
     const [isOpen, setIsOpen] = useState(false);
     const [editingVoucher, setEditingVoucher] = useState(null);
     const [code, setCode] = useState('');
@@ -40,6 +39,7 @@ const AdminVouchers = () => {
     }, []);
 
     const handleOpenCreate = () => {
+        if (readOnly) return;
         setEditingVoucher(null);
         setCode('');
         setDescription('');
@@ -53,45 +53,49 @@ const AdminVouchers = () => {
         setIsOpen(true);
     };
 
-    const handleOpenEdit = (v) => {
-        setEditingVoucher(v);
-        setCode(v.code || '');
-        setDescription(v.description || '');
-        setDiscountType(v.discountType || 'PERCENT');
-        setDiscountValue(v.discountValue || 0);
-        setMinOrderValue(v.minOrderValue || 0);
-        setMaxDiscountAmount(v.maxDiscountAmount || 0);
-        setUsageLimit(v.usageLimit || 0);
-        setIsActive(v.isActive !== false);
-        
-        // Format ISO string to datetime-local input format (YYYY-MM-DDTHH:mm)
-        if (v.expiredAt) {
-            const date = new Date(v.expiredAt);
-            const tzoffset = date.getTimezoneOffset() * 60000; //offset in milliseconds
-            const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
+    const handleOpenEdit = (voucher) => {
+        if (readOnly) return;
+        setEditingVoucher(voucher);
+        setCode(voucher.code || '');
+        setDescription(voucher.description || '');
+        setDiscountType(voucher.discountType || 'PERCENT');
+        setDiscountValue(voucher.discountValue || 0);
+        setMinOrderValue(voucher.minOrderValue || 0);
+        setMaxDiscountAmount(voucher.maxDiscountAmount || 0);
+        setUsageLimit(voucher.usageLimit || 0);
+        setIsActive(voucher.isActive !== false);
+
+        if (voucher.expiredAt) {
+            const date = new Date(voucher.expiredAt);
+            const tzoffset = date.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(date.getTime() - tzoffset).toISOString().slice(0, 16);
             setExpiredAt(localISOTime);
         } else {
             setExpiredAt('');
         }
+
         setIsOpen(true);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xoá voucher này?')) return;
+        if (readOnly) return;
+        if (!window.confirm('Bạn có chắc chắn muốn xóa voucher này?')) return;
+
         try {
             await api.delete(`/api/admin/vouchers/${id}`);
-            setSuccessMessage('Xoá voucher thành công!');
+            setSuccessMessage('Xóa voucher thành công!');
             fetchVouchers();
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (err) {
             console.error('Error deleting voucher:', err);
-            setError('Không thể xoá voucher.');
+            setError('Không thể xóa voucher.');
             setTimeout(() => setError(''), 3000);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (readOnly) return;
         setError('');
 
         if (!code.trim()) {
@@ -116,7 +120,7 @@ const AdminVouchers = () => {
             discountValue: parseFloat(discountValue),
             minOrderValue: parseFloat(minOrderValue),
             maxDiscountAmount: parseFloat(maxDiscountAmount),
-            usageLimit: parseInt(usageLimit),
+            usageLimit: parseInt(usageLimit, 10),
             isActive,
             expiredAt: expiredAt ? new Date(expiredAt).toISOString() : null
         };
@@ -129,13 +133,13 @@ const AdminVouchers = () => {
                 await api.post('/api/admin/vouchers', payload);
                 setSuccessMessage('Thêm voucher mới thành công!');
             }
+
             setIsOpen(false);
             fetchVouchers();
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (err) {
             console.error('Error saving voucher:', err);
-            const msg = err.response?.data?.message || 'Có lỗi xảy ra khi lưu voucher.';
-            setError(msg);
+            setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu voucher.');
         }
     };
 
@@ -151,21 +155,27 @@ const AdminVouchers = () => {
 
     const getStatusClass = (status) => {
         switch (status) {
-            case 'ACTIVE': return 'status-select delivered'; // green
-            case 'EXPIRED': return 'status-select cancelled'; // red
-            case 'USED_UP': return 'status-select pending_payment'; // orange/yellow
-            case 'INACTIVE': return 'status-select cod_pending'; // grey
+            case 'ACTIVE': return 'status-select delivered';
+            case 'EXPIRED': return 'status-select cancelled';
+            case 'USED_UP': return 'status-select pending_payment';
+            case 'INACTIVE': return 'status-select cod_pending';
             default: return '';
         }
     };
 
     return (
         <div className="admin-vouchers-tab">
-            <div className="action-header-row">
-                <button className="btn-add-product" onClick={handleOpenCreate}>
-                    <FontAwesomeIcon icon={icons.plus} /> Thêm Voucher mới
-                </button>
-            </div>
+            {!readOnly ? (
+                <div className="action-header-row">
+                    <button className="btn-add-product" onClick={handleOpenCreate}>
+                        <FontAwesomeIcon icon={icons.plus} /> Thêm Voucher mới
+                    </button>
+                </div>
+            ) : (
+                <div className="admin-readonly-note">
+                    <FontAwesomeIcon icon={icons.shield} /> STAFF chỉ có quyền xem voucher.
+                </div>
+            )}
 
             {successMessage && (
                 <div className="admin-alert success">
@@ -193,64 +203,64 @@ const AdminVouchers = () => {
                                 <th>Giới hạn lượt</th>
                                 <th>Hạn dùng</th>
                                 <th>Trạng thái</th>
-                                <th style={{ textAlign: 'center' }}>Thao tác</th>
+                                {!readOnly && <th style={{ textAlign: 'center' }}>Thao tác</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {vouchers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: '#95a5a6' }}>
+                                    <td colSpan={readOnly ? 8 : 9} style={{ textAlign: 'center', padding: '2rem', color: '#95a5a6' }}>
                                         Chưa có mã voucher nào được tạo.
                                     </td>
                                 </tr>
                             ) : (
-                                vouchers.map((v) => (
-                                    <tr key={v.id}>
+                                vouchers.map((voucher) => (
+                                    <tr key={voucher.id}>
                                         <td>
                                             <strong style={{ color: '#C07A4D', fontSize: '1rem', letterSpacing: '0.5px' }}>
-                                                {v.code}
+                                                {voucher.code}
                                             </strong>
                                         </td>
-                                        <td>{v.description || '—'}</td>
-                                        <td>
-                                            {v.discountType === 'PERCENT' ? 'Phần trăm (%)' : 'Số tiền cố định'}
-                                        </td>
+                                        <td>{voucher.description || '-'}</td>
+                                        <td>{voucher.discountType === 'PERCENT' ? 'Phần trăm (%)' : 'Số tiền cố định'}</td>
                                         <td>
                                             <strong>
-                                                {v.discountType === 'PERCENT' 
-                                                    ? `${v.discountValue}%` 
-                                                    : formatPrice(v.discountValue)}
+                                                {voucher.discountType === 'PERCENT'
+                                                    ? `${voucher.discountValue}%`
+                                                    : formatPrice(voucher.discountValue)}
                                             </strong>
                                         </td>
-                                        <td>{v.minOrderValue > 0 ? formatPrice(v.minOrderValue) : 'Không có'}</td>
+                                        <td>{voucher.minOrderValue > 0 ? formatPrice(voucher.minOrderValue) : 'Không có'}</td>
                                         <td>
-                                            {v.usageLimit > 0 
-                                                ? `${v.usedCount} / ${v.usageLimit}` 
+                                            {voucher.usageLimit > 0
+                                                ? `${voucher.usedCount} / ${voucher.usageLimit}`
                                                 : 'Vô hạn'}
                                         </td>
                                         <td>
-                                            {v.expiredAt 
-                                                ? new Date(v.expiredAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) 
+                                            {voucher.expiredAt
+                                                ? new Date(voucher.expiredAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
                                                 : 'Không giới hạn'}
                                         </td>
                                         <td>
-                                            <span className={getStatusClass(v.status)}>
-                                                {getStatusText(v.status)}
+                                            <span className={getStatusClass(voucher.status)}>
+                                                {getStatusText(voucher.status)}
                                             </span>
                                         </td>
-                                        <td className="actions-cell">
-                                            <button className="btn-edit-action" title="Chỉnh sửa" onClick={() => handleOpenEdit(v)}>
-                                                <FontAwesomeIcon icon={icons.edit} />
-                                            </button>
-                                            <button 
-                                                className="btn-edit-action" 
-                                                style={{ background: '#fff5f5', color: '#e74c3c', borderColor: '#ffd5d5' }} 
-                                                title="Xoá" 
-                                                onClick={() => handleDelete(v.id)}
-                                            >
-                                                <FontAwesomeIcon icon={icons.trash} />
-                                            </button>
-                                        </td>
+                                        {!readOnly && (
+                                            <td className="actions-cell">
+                                                <button className="btn-edit-action" title="Chỉnh sửa" onClick={() => handleOpenEdit(voucher)}>
+                                                    <FontAwesomeIcon icon={icons.edit} />
+                                                </button>
+                                                <button
+                                                    className="btn-edit-action"
+                                                    style={{ background: '#fff5f5', color: '#e74c3c', borderColor: '#ffd5d5' }}
+                                                    title="Xóa"
+                                                    onClick={() => handleDelete(voucher.id)}
+                                                >
+                                                    <FontAwesomeIcon icon={icons.trash} />
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             )}
@@ -259,7 +269,6 @@ const AdminVouchers = () => {
                 </div>
             )}
 
-            {/* Modal Form */}
             {isOpen && (
                 <div className="admin-modal-overlay">
                     <div className="admin-modal-card" style={{ maxWidth: '650px' }}>
@@ -282,9 +291,9 @@ const AdminVouchers = () => {
                                     <div className="form-group-row col-2">
                                         <div className="form-group">
                                             <label>Mã Voucher *</label>
-                                            <input 
-                                                type="text" 
-                                                value={code} 
+                                            <input
+                                                type="text"
+                                                value={code}
                                                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                                                 placeholder="VD: GIAM20K, TET2026"
                                                 required
@@ -293,10 +302,7 @@ const AdminVouchers = () => {
                                         </div>
                                         <div className="form-group">
                                             <label>Loại giảm giá *</label>
-                                            <select 
-                                                value={discountType} 
-                                                onChange={(e) => setDiscountType(e.target.value)}
-                                            >
+                                            <select value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
                                                 <option value="PERCENT">Phần trăm (%)</option>
                                                 <option value="FIXED">Số tiền cố định (đ)</option>
                                             </select>
@@ -306,18 +312,18 @@ const AdminVouchers = () => {
                                     <div className="form-group-row col-2">
                                         <div className="form-group">
                                             <label>Giá trị giảm *</label>
-                                            <input 
-                                                type="number" 
-                                                value={discountValue} 
+                                            <input
+                                                type="number"
+                                                value={discountValue}
                                                 onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
                                                 required
                                             />
                                         </div>
                                         <div className="form-group">
                                             <label>Đơn tối thiểu (đ)</label>
-                                            <input 
-                                                type="number" 
-                                                value={minOrderValue} 
+                                            <input
+                                                type="number"
+                                                value={minOrderValue}
                                                 onChange={(e) => setMinOrderValue(Math.max(0, parseFloat(e.target.value) || 0))}
                                             />
                                         </div>
@@ -326,19 +332,19 @@ const AdminVouchers = () => {
                                     <div className="form-group-row col-2">
                                         <div className="form-group">
                                             <label>Giảm tối đa (đ) - Cho giảm %</label>
-                                            <input 
-                                                type="number" 
-                                                value={maxDiscountAmount} 
+                                            <input
+                                                type="number"
+                                                value={maxDiscountAmount}
                                                 onChange={(e) => setMaxDiscountAmount(Math.max(0, parseFloat(e.target.value) || 0))}
                                                 disabled={discountType !== 'PERCENT'}
                                             />
                                         </div>
                                         <div className="form-group">
                                             <label>Giới hạn lượt dùng (0 = Vô hạn)</label>
-                                            <input 
-                                                type="number" 
-                                                value={usageLimit} 
-                                                onChange={(e) => setUsageLimit(Math.max(0, parseInt(e.target.value) || 0))}
+                                            <input
+                                                type="number"
+                                                value={usageLimit}
+                                                onChange={(e) => setUsageLimit(Math.max(0, parseInt(e.target.value, 10) || 0))}
                                             />
                                         </div>
                                     </div>
@@ -346,18 +352,18 @@ const AdminVouchers = () => {
                                     <div className="form-group-row col-2">
                                         <div className="form-group">
                                             <label>Hạn sử dụng</label>
-                                            <input 
-                                                type="datetime-local" 
-                                                value={expiredAt} 
+                                            <input
+                                                type="datetime-local"
+                                                value={expiredAt}
                                                 onChange={(e) => setExpiredAt(e.target.value)}
                                             />
                                         </div>
                                         <div className="form-group" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.8rem' }}>
                                             <label className="checkbox-label">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={isActive} 
-                                                    onChange={(e) => setIsActive(e.target.checked)} 
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isActive}
+                                                    onChange={(e) => setIsActive(e.target.checked)}
                                                 />
                                                 Kích hoạt sử dụng
                                             </label>
@@ -366,8 +372,8 @@ const AdminVouchers = () => {
 
                                     <div className="form-group">
                                         <label>Mô tả Voucher</label>
-                                        <textarea 
-                                            value={description} 
+                                        <textarea
+                                            value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             placeholder="Mô tả điều kiện hoặc thông tin khuyến mại..."
                                             rows="2"

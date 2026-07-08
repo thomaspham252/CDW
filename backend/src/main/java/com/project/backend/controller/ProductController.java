@@ -63,6 +63,11 @@ public class ProductController {
         return ResponseEntity.ok(productService.listCategories());
     }
 
+    @GetMapping("/api/admin/products/categories")
+    public ResponseEntity<List<Category>> listAllCategories() {
+        return ResponseEntity.ok(productService.listAllCategories());
+    }
+
     // =========================================================================
     // Admin – quản lý sản phẩm
     // =========================================================================

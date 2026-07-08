@@ -1,7 +1,9 @@
 package com.project.backend.controller;
 
+import com.project.backend.dto.request.user.UserAdminUpdateRequest;
 import com.project.backend.dto.response.user.UserAdminResponse;
 import com.project.backend.entity.auth.User;
+import com.project.backend.exception.BadRequestException;
 import com.project.backend.repository.auth.UserRepository;
 import com.project.backend.repository.order.OrderRepository;
 import com.project.backend.exception.NotFoundException;
@@ -25,7 +27,7 @@ public class UserAdminController {
             @RequestParam(required = false) String search) {
         List<User> users;
         if (search != null && !search.isBlank()) {
-            users = userRepository.findByFullnameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search);
+            users = userRepository.findByFullnameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrPhoneContainingIgnoreCase(search, search, search);
         } else {
             users = userRepository.findAllByOrderByCreatedAtDesc();
         }
@@ -43,6 +45,36 @@ public class UserAdminController {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Người dùng không tồn tại: " + id));
         user.setRole(value.toUpperCase());
+        User saved = userRepository.save(user);
+        return ResponseEntity.ok(toResponse(saved));
+    }
+
+    @PutMapping("/api/admin/users/{id}")
+    public ResponseEntity<UserAdminResponse> updateUser(
+            @PathVariable Long id,
+            @RequestBody UserAdminUpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Người dùng không tồn tại: " + id));
+
+        String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        if (email.isBlank()) {
+            throw new BadRequestException("Email không được để trống.");
+        }
+
+        userRepository.findByEmail(email).ifPresent(existing -> {
+            if (!existing.getId().equals(id)) {
+                throw new BadRequestException("Email đã được sử dụng bởi tài khoản khác.");
+            }
+        });
+
+        user.setEmail(email);
+        user.setFullname(request.getFullname());
+        user.setPhone(request.getPhone());
+        user.setGender(request.getGender());
+        user.setRole(request.getRole() != null && !request.getRole().isBlank()
+                ? request.getRole().trim().toUpperCase()
+                : User.DEFAULT_ROLE);
+
         User saved = userRepository.save(user);
         return ResponseEntity.ok(toResponse(saved));
     }

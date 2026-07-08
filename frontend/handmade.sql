@@ -167,6 +167,10 @@ CREATE TABLE public.orders (
     ward character varying(100),
     district character varying(100),
     province character varying(100),
+    status character varying(50) DEFAULT 'pending'::character varying,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
     note text,
     payment_method character varying(50),
     shipping_fee numeric(15,2) DEFAULT 0,
@@ -295,7 +299,9 @@ CREATE TABLE public.product_variants (
     product_id integer,
     price numeric(38,2) NOT NULL,
     base_price numeric(38,2),
-    size character varying(255)
+    size character varying(255),
+    color character varying(255),
+    stock integer
 );
 
 
@@ -1146,6 +1152,12 @@ COPY public.product_variants (id, product_id, price, base_price, size) FROM stdi
 -- TOC entry 5139 (class 0 OID 16548)
 -- Dependencies: 222
 -- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: postgres
+
+UPDATE public.product_variants
+SET
+    color = split_part(size, ' / ', 1),
+    size = split_part(size, ' / ', 2);
+
 --
 
 COPY public.products (id, name, slug, description, category_id, is_active, created_at) FROM stdin;

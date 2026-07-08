@@ -90,8 +90,14 @@ export const useProductsPage = () => {
           price: p.price ? parseFloat(p.price) : 0,
           categoryId: p.categoryId,
           category: p.categoryName || "Chưa phân loại",
-          rating: 5, // Backend chưa có rating
-          reviews: 0, // Backend chưa có reviews
+          rating:
+            p.rating !== null && p.rating !== undefined ? Number(p.rating) : 0,
+          reviews:
+            p.reviewCount !== null && p.reviewCount !== undefined
+              ? Number(p.reviewCount)
+              : p.reviews !== null && p.reviews !== undefined
+                ? Number(p.reviews)
+                : 0,
           stock: p.stock !== null && p.stock !== undefined ? p.stock : 0,
           defaultVariantId: p.defaultVariantId,
           description: "",
@@ -120,7 +126,9 @@ export const useProductsPage = () => {
           category.slug === categoryParam ||
           category.name === categoryParam,
       );
-      setSelectedCategory(matchedCategory?.name || decodeURIComponent(categoryParam));
+      setSelectedCategory(
+        matchedCategory?.name || decodeURIComponent(categoryParam),
+      );
     } else {
       setSelectedCategory("");
     }

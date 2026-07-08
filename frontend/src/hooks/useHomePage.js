@@ -6,7 +6,6 @@ import { useToast } from "./useToast";
 import { useFavorites } from "./useFavorites";
 import productService from "../services/productService";
 
-// DỮ LIỆU CỨNG CHO HOMEPAGE (KHI CHƯA CÓ DB)
 export const useHomePage = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -41,8 +40,14 @@ export const useHomePage = () => {
           price: p.price ? parseFloat(p.price) : 0,
           originalPrice: p.basePrice ? parseFloat(p.basePrice) : null,
           category: p.categoryName || "Chưa phân loại",
-          rating: 5,
-          reviews: 0,
+          rating:
+            p.rating !== null && p.rating !== undefined ? Number(p.rating) : 0,
+          reviews:
+            p.reviewCount !== null && p.reviewCount !== undefined
+              ? Number(p.reviewCount)
+              : p.reviews !== null && p.reviews !== undefined
+                ? Number(p.reviews)
+                : 0,
           stock: p.stock !== null && p.stock !== undefined ? p.stock : 0,
           variantId: p.variantId,
           defaultVariantId: p.defaultVariantId,
@@ -102,7 +107,7 @@ export const useHomePage = () => {
   const handleToggleFavorite = async (productId) => {
     if (!user) {
       const confirmLogin = window.confirm(
-        "Vui lòng đăng nhập để thêm sản phẩm vào yêu thích. Bạn có muốn đăng nhập ngay bây giờ?"
+        "Vui lòng đăng nhập để thêm sản phẩm vào yêu thích. Bạn có muốn đăng nhập ngay bây giờ?",
       );
       if (confirmLogin) {
         navigate("/login");

@@ -2,6 +2,15 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon, icons } from '../../utils/icons';
 import { formatPrice } from '../../utils/formatPrice';
 import api from '../../services/axiosInstance';
+import './AdminInventory.css';
+
+const LOW_STOCK_THRESHOLD = 10;
+const REORDER_THRESHOLD = 15;
+const OVERVIEW_PAGE_SIZE = 5;
+
+const buildVariantDetails = (item) => {
+    return `${item.color || 'Không có màu'} - Size ${item.size || 'Mặc định'}`;
+};
 
 const AdminInventory = () => {
     const [inventory, setInventory] = useState([]);
@@ -14,6 +23,14 @@ const AdminInventory = () => {
     
     // Search for the details table
     const [search, setSearch] = useState('');
+    const [overviewPage, setOverviewPage] = useState(1);
+    const [stockModal, setStockModal] = useState({
+        isOpen: false,
+        mode: 'set',
+        item: null,
+        value: ''
+    });
+    const [savingStock, setSavingStock] = useState(false);
     
     // History list initialized from localStorage to persist user imports
     const [importHistory, setImportHistory] = useState(() => {
@@ -51,74 +68,90 @@ const AdminInventory = () => {
         fetchInventory();
     }, [fetchInventory]);
 
-    // Handle editing stock quantity (either via prompt or double-clicking)
-    const handleSetStockSubmit = async (variantId, newStock, productName, variantDetails) => {
+    const closeStockModal = () => {
+        if (savingStock) return;
+        setStockModal({
+            isOpen: false,
+            mode: 'set',
+            item: null,
+            value: ''
+        });
+    };
+
+    const openStockModal = (item, mode = 'set') => {
         setError('');
-        const parsedStock = parseInt(newStock);
-        if (isNaN(parsedStock) || parsedStock < 0) {
-            alert('Vui lòng nhập số lượng hợp lệ (lớn hơn hoặc bằng 0).');
+        setStockModal({
+            isOpen: true,
+            mode,
+            item,
+            value: mode === 'set' ? String(item.stock || 0) : '10'
+        });
+    };
+
+    const addHistoryEntry = (item, originalStock, newStock, type) => {
+        const diff = newStock - originalStock;
+        if (diff === 0) return;
+
+        const historyEntry = {
+            id: Date.now(),
+            productName: item.productName,
+            variantDetails: buildVariantDetails(item),
+            originalStock,
+            newStock,
+            change: diff > 0 ? `+${diff}` : `${diff}`,
+            type,
+            timestamp: new Date().toLocaleString('vi-VN')
+        };
+
+        setImportHistory(prev => [historyEntry, ...prev].slice(0, 20));
+    };
+
+    const handleStockModalSubmit = async (e) => {
+        e.preventDefault();
+        const { item, mode, value } = stockModal;
+        if (!item) return;
+
+        const parsedValue = parseInt(value, 10);
+        if (Number.isNaN(parsedValue) || parsedValue < 0 || (mode === 'import' && parsedValue <= 0)) {
+            setError(mode === 'import'
+                ? 'Vui lòng nhập số lượng nhập thêm lớn hơn 0.'
+                : 'Vui lòng nhập số lượng tồn kho hợp lệ.');
             return;
         }
 
-        // Find existing item to log import change
-        const currentItem = inventory.find(item => item.variantId === variantId);
-        const originalStock = currentItem ? currentItem.stock : 0;
-        const diff = parsedStock - originalStock;
+        const originalStock = item.stock || 0;
 
         try {
-            await api.put(`/api/admin/inventory/set?variantId=${variantId}&stock=${parsedStock}`);
-            setSuccessMessage(`Đã cập nhật tồn kho của "${productName}" thành ${parsedStock} sản phẩm.`);
-            
-            // Add entry to import history if there's a change
-            if (diff !== 0) {
-                const historyEntry = {
-                    id: Date.now(),
-                    productName,
-                    variantDetails,
-                    originalStock,
-                    newStock: parsedStock,
-                    change: diff > 0 ? `+${diff}` : `${diff}`,
-                    type: diff > 0 ? 'import' : 'export',
-                    timestamp: new Date().toLocaleString('vi-VN')
-                };
-                setImportHistory(prev => [historyEntry, ...prev].slice(0, 20)); // Keep last 20 entries
+            setSavingStock(true);
+            setError('');
+
+            if (mode === 'import') {
+                await api.post(`/api/admin/inventory/import?variantId=${item.variantId}&amount=${parsedValue}`);
+                addHistoryEntry(item, originalStock, originalStock + parsedValue, 'import');
+                setSuccessMessage(`Đã nhập thêm ${parsedValue} sản phẩm cho "${item.productName}".`);
+            } else {
+                await api.put(`/api/admin/inventory/set?variantId=${item.variantId}&stock=${parsedValue}`);
+                addHistoryEntry(item, originalStock, parsedValue, parsedValue >= originalStock ? 'import' : 'export');
+                setSuccessMessage(`Đã cập nhật tồn kho của "${item.productName}" thành ${parsedValue} sản phẩm.`);
             }
 
-            fetchInventory();
+            await fetchInventory();
             setTimeout(() => setSuccessMessage(''), 4000);
+            setStockModal({ isOpen: false, mode: 'set', item: null, value: '' });
         } catch (err) {
-            console.error('Error setting stock:', err);
-            setError('Không thể điều chỉnh kho hàng.');
+            console.error('Error updating inventory:', err);
+            setError('Không thể cập nhật kho hàng.');
+        } finally {
+            setSavingStock(false);
         }
     };
 
-    // Prompt for updating stock
     const triggerEditStock = (item) => {
-        const variantDetails = `${item.color || ''} - Size ${item.size || 'Mặc định'}`;
-        const newStock = prompt(
-            `Nhập số lượng tồn kho mới cho mặt hàng:\n"${item.productName} (${variantDetails})"\nTồn kho hiện tại: ${item.stock}`, 
-            item.stock
-        );
-        if (newStock !== null) {
-            handleSetStockSubmit(item.variantId, newStock, item.productName, variantDetails);
-        }
+        openStockModal(item, 'set');
     };
 
-    // Prompt for adding import stock
     const triggerImportStock = (item) => {
-        const variantDetails = `${item.color || ''} - Size ${item.size || 'Mặc định'}`;
-        const addAmount = prompt(
-            `NHẬP HÀNG BỔ SUNG cho mặt hàng:\n"${item.productName} (${variantDetails})"\nTồn kho hiện tại: ${item.stock}\n\nNhập số lượng nhập thêm:`, 
-            '10'
-        );
-        if (addAmount !== null) {
-            const parsedAdd = parseInt(addAmount);
-            if (isNaN(parsedAdd) || parsedAdd <= 0) {
-                alert('Vui lòng nhập số lượng lớn hơn 0.');
-                return;
-            }
-            handleSetStockSubmit(item.variantId, item.stock + parsedAdd, item.productName, variantDetails);
-        }
+        openStockModal(item, 'import');
     };
 
     // Memoized metrics matching the mockup
@@ -134,7 +167,7 @@ const AdminInventory = () => {
             totalStock += stock;
             if (stock === 0) {
                 outOfStockCount++;
-            } else if (stock < 10) {
+            } else if (stock < LOW_STOCK_THRESHOLD) {
                 lowStockCount++;
             }
             totalValue += stock * (item.price || 0);
@@ -172,9 +205,27 @@ const AdminInventory = () => {
     // Low stock warnings
     const lowStockItems = useMemo(() => {
         return inventory
-            .filter(item => (item.stock || 0) < 10)
+            .filter(item => (item.stock || 0) < LOW_STOCK_THRESHOLD)
             .sort((a, b) => (a.stock || 0) - (b.stock || 0));
     }, [inventory]);
+
+    const reorderItems = useMemo(() => {
+        return inventory
+            .filter(item => (item.stock || 0) < REORDER_THRESHOLD)
+            .sort((a, b) => (a.stock || 0) - (b.stock || 0));
+    }, [inventory]);
+
+    const overviewTotalPages = Math.max(1, Math.ceil(reorderItems.length / OVERVIEW_PAGE_SIZE));
+    const overviewPagedItems = reorderItems.slice(
+        (overviewPage - 1) * OVERVIEW_PAGE_SIZE,
+        overviewPage * OVERVIEW_PAGE_SIZE
+    );
+
+    useEffect(() => {
+        if (overviewPage > overviewTotalPages) {
+            setOverviewPage(overviewTotalPages);
+        }
+    }, [overviewPage, overviewTotalPages]);
 
     // Table filter for the detailed list view
     const filteredInventory = inventory.filter(item => 
@@ -346,7 +397,7 @@ const AdminInventory = () => {
                                                             Phân loại: {item.color || 'Không có'} - Size: {item.size || 'Mặc định'}
                                                         </div>
                                                         <div style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: '500', marginTop: '2px' }}>
-                                                            Còn {item.stock} / tối thiểu 10
+                                                            Còn {item.stock} / tối thiểu {LOW_STOCK_THRESHOLD}
                                                         </div>
                                                     </div>
                                                     <div>
@@ -475,14 +526,14 @@ const AdminInventory = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {inventory.filter(i => i.stock < 15).length === 0 ? (
+                                            {reorderItems.length === 0 ? (
                                                 <tr>
                                                     <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
                                                         Không có mặt hàng nào thiếu hụt.
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                inventory.filter(i => i.stock < 15).map(item => (
+                                                overviewPagedItems.map(item => (
                                                     <tr key={item.variantId} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                                         <td style={{ padding: '0.85rem 1rem' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -554,6 +605,24 @@ const AdminInventory = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                                {overviewTotalPages > 1 && (
+                                    <div className="inventory-pagination">
+                                        {Array.from({ length: overviewTotalPages }, (_, index) => {
+                                            const pageNumber = index + 1;
+
+                                            return (
+                                                <button
+                                                    key={pageNumber}
+                                                    type="button"
+                                                    className={`inventory-page-button ${overviewPage === pageNumber ? 'active' : ''}`}
+                                                    onClick={() => setOverviewPage(pageNumber)}
+                                                >
+                                                    {pageNumber}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : (
@@ -645,7 +714,7 @@ const AdminInventory = () => {
                                                     <td style={{ padding: '1rem', verticalAlign: 'middle', textAlign: 'center' }}>
                                                         {item.stock === 0 ? (
                                                             <span style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', background: '#fee2e2', color: '#ef4444', fontWeight: '600' }}>Hết hàng</span>
-                                                        ) : item.stock < 10 ? (
+                                                        ) : item.stock < LOW_STOCK_THRESHOLD ? (
                                                             <span style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', background: '#ffedd5', color: '#f97316', fontWeight: '600' }}>Sắp hết hàng</span>
                                                         ) : (
                                                             <span style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', background: '#d1fae5', color: '#10b981', fontWeight: '600' }}>Còn hàng</span>
@@ -661,8 +730,83 @@ const AdminInventory = () => {
                     )}
                 </>
             )}
+
+            {stockModal.isOpen && stockModal.item && (
+                <div className="inventory-modal-backdrop" onMouseDown={closeStockModal}>
+                    <form
+                        className="inventory-stock-modal"
+                        onSubmit={handleStockModalSubmit}
+                        onMouseDown={(e) => e.stopPropagation()}
+                    >
+                        <div className="inventory-modal-header">
+                            <div>
+                                <h3>
+                                    {stockModal.mode === 'import' ? 'Nhập thêm tồn kho' : 'Điều chỉnh tồn kho'}
+                                </h3>
+                                <p>
+                                    {stockModal.mode === 'import'
+                                        ? 'Cộng thêm số lượng mới vào kho hiện tại.'
+                                        : 'Đặt lại số lượng tồn kho chính xác cho biến thể này.'}
+                                </p>
+                            </div>
+                            <button type="button" className="inventory-modal-close" onClick={closeStockModal}>
+                                <FontAwesomeIcon icon={icons.close} />
+                            </button>
+                        </div>
+
+                        <div className="inventory-modal-product">
+                            <img
+                                src={stockModal.item.imageUrl || 'https://placehold.co/56x56?text=No+Image'}
+                                alt={stockModal.item.productName}
+                            />
+                            <div>
+                                <strong>{stockModal.item.productName}</strong>
+                                <span>{buildVariantDetails(stockModal.item)}</span>
+                                <small>Tồn hiện tại: {stockModal.item.stock || 0}</small>
+                            </div>
+                        </div>
+
+                        <label className="inventory-field">
+                            <span>
+                                {stockModal.mode === 'import' ? 'Số lượng nhập thêm' : 'Tồn kho mới'}
+                            </span>
+                            <input
+                                type="number"
+                                min={stockModal.mode === 'import' ? '1' : '0'}
+                                step="1"
+                                value={stockModal.value}
+                                onChange={(e) =>
+                                    setStockModal(prev => ({ ...prev, value: e.target.value }))
+                                }
+                                autoFocus
+                            />
+                        </label>
+
+                        <div className="inventory-modal-preview">
+                            Sau khi lưu: {' '}
+                            <strong>
+                                {stockModal.mode === 'import'
+                                    ? (stockModal.item.stock || 0) + (parseInt(stockModal.value, 10) || 0)
+                                    : (parseInt(stockModal.value, 10) || 0)}
+                            </strong>
+                            {' '}sản phẩm
+                        </div>
+
+                        <div className="inventory-modal-actions">
+                            <button type="button" className="inventory-btn secondary" onClick={closeStockModal}>
+                                Hủy
+                            </button>
+                            <button type="submit" className="inventory-btn primary" disabled={savingStock}>
+                                {savingStock ? 'Đang lưu...' : 'Lưu thay đổi'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
         </div>
     );
 };
 
 export default AdminInventory;
+
+

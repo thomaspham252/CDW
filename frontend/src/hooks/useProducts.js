@@ -28,8 +28,14 @@ export const useProducts = () => {
           price: p.price ? parseFloat(p.price) : 0,
           originalPrice: p.basePrice ? parseFloat(p.basePrice) : null,
           category: p.categoryName || "Chưa phân loại",
-          rating: 5,
-          reviews: 0,
+          rating:
+            p.rating !== null && p.rating !== undefined ? Number(p.rating) : 0,
+          reviews:
+            p.reviewCount !== null && p.reviewCount !== undefined
+              ? Number(p.reviewCount)
+              : p.reviews !== null && p.reviews !== undefined
+                ? Number(p.reviews)
+                : 0,
           stock: p.stock !== null && p.stock !== undefined ? p.stock : 0,
           defaultVariantId: p.defaultVariantId,
         }));
