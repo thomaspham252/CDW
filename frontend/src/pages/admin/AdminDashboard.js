@@ -9,11 +9,14 @@ import AdminAnalytics from './AdminAnalytics';
 import AdminVouchers from './AdminVouchers';
 import AdminMembers from './AdminMembers';
 import AdminInventory from './AdminInventory';
+import AdminOrders from './AdminOrders';
 import '../../styles/admin/AdminDashboard.css';
 
 const AdminDashboard = () => {
     const { user, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    const roleUpper = user?.role?.toUpperCase();
+    const isAdmin = roleUpper === 'ADMIN';
 
     const [activeTab, setActiveTab] = useState('analytics'); // analytics, products, orders, vouchers, members, inventory
     
@@ -30,10 +33,6 @@ const AdminDashboard = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
-    // States for orders
-    const [orders, setOrders] = useState([]);
-    const [ordersLoading, setOrdersLoading] = useState(true);
-
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -47,9 +46,6 @@ const AdminDashboard = () => {
             const roleUpper = user.role?.toUpperCase();
             if (roleUpper !== 'ADMIN' && roleUpper !== 'STAFF') {
                 navigate('/');
-            } else if (roleUpper === 'STAFF') {
-                // Nếu là STAFF, mặc định sang tab sản phẩm vì không có quyền xem analytics
-                setActiveTab('products');
             }
         }
     }, [user, isAuthenticated, navigate]);
@@ -87,45 +83,25 @@ const AdminDashboard = () => {
     // Load categories
     const fetchCategories = async () => {
         try {
-            const res = await api.get('/api/products/categories');
+            const res = await api.get('/api/admin/products/categories');
             setCategories(res.data);
         } catch (err) {
             console.error('Error fetching categories:', err);
         }
     };
 
-    // Load orders
-    const fetchOrders = async () => {
-        setOrdersLoading(true);
-        try {
-            const res = await api.get('/api/admin/orders');
-            setOrders(res.data);
-        } catch (err) {
-            console.error('Error fetching orders:', err);
-            setError('Không thể tải danh sách đơn hàng.');
-        } finally {
-            setOrdersLoading(false);
-        }
-    };
 
     // Trigger data loading depending on active tab
     useEffect(() => {
         setError('');
         setSuccessMessage('');
 
-        const roleUpper = user?.role?.toUpperCase();
-        if (roleUpper === 'STAFF' && (activeTab === 'analytics' || activeTab === 'members')) {
-            setActiveTab('products');
-            return;
-        }
 
         if (activeTab === 'analytics') {
             fetchAnalytics();
         } else if (activeTab === 'products') {
             fetchProducts(0);
             fetchCategories();
-        } else if (activeTab === 'orders') {
-            fetchOrders();
         }
     }, [activeTab, user]);
 
@@ -143,30 +119,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Handle Order status change
-    const handleOrderStatusChange = async (orderId, newStatus) => {
-        try {
-            await api.patch(`/api/admin/orders/${orderId}/status?value=${newStatus}`);
-            setSuccessMessage(`Đã cập nhật trạng thái đơn hàng #${orderId} thành công.`);
-            fetchOrders();
-            setTimeout(() => setSuccessMessage(''), 3000);
-        } catch (err) {
-            console.error('Error updating order status:', err);
-            setError('Không thể cập nhật trạng thái đơn hàng.');
-        }
-    };
-
-    const handlePaymentStatusChange = async (orderId, newStatus) => {
-        try {
-            await api.patch(`/api/admin/orders/${orderId}/payment-status?value=${newStatus}`);
-            setSuccessMessage(`Đã cập nhật trạng thái thanh toán đơn hàng #${orderId}.`);
-            fetchOrders();
-            setTimeout(() => setSuccessMessage(''), 3000);
-        } catch (err) {
-            console.error('Error updating payment status:', err);
-            setError('Không thể cập nhật trạng thái thanh toán.');
-        }
-    };
 
     // Open form for create
     const handleCreateProduct = () => {
@@ -196,14 +148,12 @@ const AdminDashboard = () => {
                     <span>Hệ thống quản trị</span>
                 </div>
                 <div className="admin-menu">
-                    {user?.role?.toUpperCase() === 'ADMIN' && (
                         <button 
                             className={`menu-item ${activeTab === 'analytics' ? 'active' : ''}`}
                             onClick={() => setActiveTab('analytics')}
                         >
                             <FontAwesomeIcon icon={icons.home} className="menu-icon" /> Thống kê doanh số
                         </button>
-                    )}
                     <button 
                         className={`menu-item ${activeTab === 'products' ? 'active' : ''}`}
                         onClick={() => setActiveTab('products')}
@@ -228,14 +178,12 @@ const AdminDashboard = () => {
                     >
                         <FontAwesomeIcon icon={icons.truck} className="menu-icon" /> Quản lý kho hàng
                     </button>
-                    {user?.role?.toUpperCase() === 'ADMIN' && (
                         <button 
                             className={`menu-item ${activeTab === 'members' ? 'active' : ''}`}
                             onClick={() => setActiveTab('members')}
                         >
                             <FontAwesomeIcon icon={icons.user} className="menu-icon" /> Quản lý thành viên
                         </button>
-                    )}
                 </div>
             </div>
 
@@ -363,82 +311,17 @@ const AdminDashboard = () => {
 
                 {/* TAB 3: ORDERS */}
                 {activeTab === 'orders' && (
-                    <div className="orders-tab-content">
-                        {ordersLoading ? (
-                            <div className="admin-loading-spinner">Đang tải danh sách đơn hàng...</div>
-                        ) : (
-                            <div className="admin-table-wrapper">
-                                <table className="admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Mã đơn</th>
-                                            <th>Người nhận</th>
-                                            <th>Ngày đặt</th>
-                                            <th>Hình thức</th>
-                                            <th>Tổng tiền</th>
-                                            <th>Trạng thái đơn hàng</th>
-                                            <th>Thanh toán</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {orders.map(order => (
-                                            <tr key={order.id}>
-                                                <td><strong>#CDW-{order.id}</strong></td>
-                                                <td>
-                                                    <div className="customer-info-cell">
-                                                        <strong>{order.fullname}</strong>
-                                                        <span>{order.phone}</span>
-                                                    </div>
-                                                </td>
-                                                <td>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
-                                                <td>
-                                                    <span className={`payment-badge ${order.paymentMethod}`}>
-                                                        {order.paymentMethod === 'COD' ? 'COD' : order.paymentMethod === 'VNPAY' ? 'VNPay' : 'QR'}
-                                                    </span>
-                                                </td>
-                                                <td className="text-primary font-bold">{formatPrice(order.totalAmount)}</td>
-                                                <td>
-                                                    <select 
-                                                        className={`status-select ${order.status}`}
-                                                        value={order.status}
-                                                        onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
-                                                    >
-                                                        <option value="WAITING_CONFIRMATION">Chờ xác nhận</option>
-                                                        <option value="WAITING_PICKUP">Chờ lấy hàng</option>
-                                                        <option value="SHIPPING">Chờ vận chuyển</option>
-                                                        <option value="DELIVERED">Đã giao hàng</option>
-                                                        <option value="CANCELLED">Đã hủy đơn</option>
-                                                    </select>
-                                                </td>
-                                                <td>
-                                                    <select
-                                                        className={`status-select ${order.paymentStatus}`}
-                                                        value={order.paymentStatus || 'UNPAID'}
-                                                        onChange={(e) => handlePaymentStatusChange(order.id, e.target.value)}
-                                                    >
-                                                        <option value="UNPAID">Chờ thanh toán</option>
-                                                        <option value="PAID">Đã thanh toán</option>
-                                                        <option value="FAILED">Thanh toán lỗi</option>
-                                                        <option value="COD">COD</option>
-                                                    </select>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
+                    <AdminOrders />
                 )}
 
                 {/* TAB 4: VOUCHERS */}
                 {activeTab === 'vouchers' && (
-                    <AdminVouchers />
+                    <AdminVouchers readOnly={!isAdmin} />
                 )}
 
                 {/* TAB 5: MEMBERS */}
                 {activeTab === 'members' && (
-                    <AdminMembers />
+                    <AdminMembers readOnly={!isAdmin} />
                 )}
 
                 {/* TAB 6: INVENTORY */}

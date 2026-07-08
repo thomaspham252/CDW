@@ -1,7 +1,9 @@
 package com.project.backend.dto.request.product;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Min;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,17 +11,19 @@ import lombok.Setter;
 @Setter
 public class VariantUpsertRequest {
 
+    @NotNull(message = "Giá bán không được để trống")
     @PositiveOrZero(message = "Giá bán (price) không được âm")
-    private double price;
+    private Double price;
 
     @PositiveOrZero(message = "Giá gốc (basePrice) không được âm")
-    private double basePrice; // 0 = không cung cấp; nếu > 0 thì phải >= price (check trong ProductValidator)
+    private Double basePrice; // 0 = không cung cấp; nếu > 0 thì phải >= price (check trong ProductValidator)
 
-    private String size; // tuỳ chọn (ví dụ: "250ml", "500g")
+    private String size; // tuỳ chọn (ví dụ: "M/30x20cm")
 
     private String color; // tuỳ chọn (ví dụ: "Đỏ", "Nâu")
 
-    private Integer stock = 50; // mặc định 50 nếu không điền khi tạo mới
+    @Min(value = 0, message = "Tồn kho không được âm")
+    private Integer stock;
 
     @Valid // cascade validate sang ImageUpsertRequest
     private ImageUpsertRequest image;

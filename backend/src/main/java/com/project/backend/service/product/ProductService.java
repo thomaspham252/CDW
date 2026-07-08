@@ -42,6 +42,9 @@ public interface ProductService {
     /** Lấy danh sách toàn bộ danh mục sản phẩm. */
     List<Category> listCategories();
 
+    /** Lấy danh sách toàn bộ danh mục sản phẩm cho admin. */
+    List<Category> listAllCategories();
+
     // ── Variant operations ───────────────────────────────────────────────────
 
     /** Thêm biến thể mới vào sản phẩm. */

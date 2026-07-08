@@ -49,6 +49,14 @@
     border-color: #C07A4D;
 }
 
+.login-error {
+    margin: -4px 0 0;
+    color: #b42318;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    text-align: left;
+}
+
 .form-container button {
     padding: 14px;
     background: #C07A4D;

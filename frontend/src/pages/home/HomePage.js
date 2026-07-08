@@ -9,25 +9,25 @@ const CRAFT_CATEGORIES = [
   {
     name: "Phụ kiện",
     sub: "Phụ kiện handmade",
-    slug: "phu-kien",
+    slug: "trang-suc-handmade",
     img: "https://file.hstatic.net/200000151225/file/bo_2_coc_gom_su_handmade_cao_cap_praca__4__grande.jpg",
   },
   {
     name: "Trang trí",
     sub: "Đồ trang trí thủ công",
-    slug: "trang-tri",
+    slug: "do-trang-tri-nha-cua",
     img: "https://dantra.vn/uploads/san-pham/vai-nem-goi/vai-tho-cam-bana/tho-cam-5.jpg",
   },
   {
     name: "Sản phẩm từ len",
     sub: "Sợi len thủ công",
-    slug: "san-pham-tu-len",
+    slug: "do-len-va-vai",
     img: "https://35smhome.com/wp-content/uploads/2024/06/gia-cong-san-pham-go--1080x428.jpg",
   },
   {
     name: "Sản phẩm từ thổ cẩm",
     sub: "Vải thổ cẩm",
-    slug: "san-pham-tu-tho-cam",
+    slug: "tho-cam",
     img: "https://nvhphunu.vn/wp-content/uploads/2023/12/etsy-jewelry-featured-image-1.webp",
   },
 ];
@@ -82,7 +82,7 @@ const HomePage = () => {
           {CRAFT_CATEGORIES.map((cat, i) => (
             <Link
               key={i}
-              to={`/products?category=${encodeURIComponent(cat.name)}`}
+              to={`/products?category=${encodeURIComponent(cat.slug)}`}
               className="explore-card"
             >
               <img src={cat.img} alt={cat.name} />

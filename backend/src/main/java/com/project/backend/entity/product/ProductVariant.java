@@ -40,7 +40,6 @@ public class ProductVariant {
     private Set<ProductImage> images;
 
     @Column(name = "stock")
-    @Builder.Default
-    private Integer stock = 50;
+    private Integer stock;
 
 }

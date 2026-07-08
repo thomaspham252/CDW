@@ -27,29 +27,36 @@ export const useProductDetailPage = (id) => {
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
   const [isDescExpanded, setIsDescExpanded] = useState(false);
-  
+
   // Dynamic product mapping with stock calculated based on selected variants
   const product = useMemo(() => {
     if (!rawProduct) return null;
     let currentStock = 0;
-    
+
     // Find the variant that matches the currently selected color and type/size
-    const matchedVariant = rawProduct.variants.find(v => {
+    const matchedVariant = rawProduct.variants.find((v) => {
       const matchColor = !selectedColor || v.color === selectedColor;
       const matchSize = !selectedType || v.size === selectedType;
       return matchColor && matchSize;
     });
 
     if (matchedVariant) {
-      currentStock = matchedVariant.stock !== null && matchedVariant.stock !== undefined ? matchedVariant.stock : 50;
+      currentStock =
+        matchedVariant.stock !== null && matchedVariant.stock !== undefined
+          ? matchedVariant.stock
+          : 0;
     } else if (rawProduct.variants && rawProduct.variants.length > 0) {
       // Fallback: sum of all variants stock
-      currentStock = rawProduct.variants.reduce((sum, v) => sum + (v.stock !== null && v.stock !== undefined ? v.stock : 50), 0);
+      currentStock = rawProduct.variants.reduce(
+        (sum, v) =>
+          sum + (v.stock !== null && v.stock !== undefined ? v.stock : 0),
+        0,
+      );
     }
 
     return {
       ...rawProduct,
-      stock: currentStock
+      stock: currentStock,
     };
   }, [rawProduct, selectedColor, selectedType]);
 
@@ -111,7 +118,10 @@ export const useProductDetailPage = (id) => {
           slug: data.slug,
           description: data.description || "Chưa có mô tả",
           category: data.categoryName || "Chưa phân loại",
-          rating: 5, // Backend chưa có rating
+          rating:
+            data.rating !== null && data.rating !== undefined
+              ? Number(data.rating)
+              : 0,
           image: null,
           images: [],
           price: 0,
@@ -125,15 +135,18 @@ export const useProductDetailPage = (id) => {
             id: variant.id,
             price: variant.price ? parseFloat(variant.price) : 0,
             size: variant.size || null,
-            color: variant.color || variant.colorName || variant.color_name || null,
+            color:
+              variant.color || variant.colorName || variant.color_name || null,
+            stock:
+              variant.stock !== null && variant.stock !== undefined
+                ? Number(variant.stock)
+                : 0,
             images: variant.images || [],
           }));
 
           // Lấy variant đầu tiên làm mặc định
           const firstVariant = mappedProduct.variants[0];
-          mappedProduct.price = firstVariant.price
-            ? firstVariant.price
-            : 0;
+          mappedProduct.price = firstVariant.price ? firstVariant.price : 0;
 
           // Lấy images từ variant
           if (firstVariant.images && firstVariant.images.length > 0) {
@@ -143,7 +156,9 @@ export const useProductDetailPage = (id) => {
               firstVariant.images[0].imgUrl;
           }
 
-          const sizes = mappedProduct.variants.map((v) => v.size).filter(Boolean);
+          const sizes = mappedProduct.variants
+            .map((v) => v.size)
+            .filter(Boolean);
           const colors = mappedProduct.variants
             .map((v) => v.color)
             .filter(Boolean);
@@ -226,15 +241,6 @@ export const useProductDetailPage = (id) => {
     }
   }, [isTypeDropdownOpen]);
 
-  const selectedVariant = useMemo(() => {
-    if (!product?.variants?.length) return null;
-    return product.variants.find((variant) => {
-      const matchColor = !selectedColor || variant.color === selectedColor;
-      const matchSize = !selectedType || variant.size === selectedType;
-      return matchColor && matchSize;
-    }) || product.variants[0];
-  }, [product, selectedColor, selectedType]);
-
   const handleAddToCart = async () => {
     if (!product) return;
     if (product.colors?.length > 0 && !selectedColor)
@@ -245,22 +251,24 @@ export const useProductDetailPage = (id) => {
     if (quantity > product.stock)
       return alert(`Chỉ còn ${product.stock} sản phẩm trong kho`);
 
-    const matchedVariant = rawProduct.variants.find(v => {
+    const matchedVariant = rawProduct.variants.find((v) => {
       const matchColor = !selectedColor || v.color === selectedColor;
       const matchSize = !selectedType || v.size === selectedType;
       return matchColor && matchSize;
     });
 
-    const variantId = matchedVariant ? matchedVariant.id : (rawProduct.variants?.[0]?.id || product.id);
+    const variantId = matchedVariant
+      ? matchedVariant.id
+      : rawProduct.variants?.[0]?.id || product.id;
 
     try {
       setAdding(true);
       // Truyền object đầy đủ vào CartContext
       addToCart(
         {
-          id: selectedVariant?.id || product.id,
+          id: variantId,
           productId: product.id,
-          variantId: selectedVariant?.id || product.id,
+          variantId,
           name: product.name,
           slug: product.slug,
           image: product.image,

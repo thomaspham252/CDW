@@ -49,6 +49,12 @@ public class JwtFilter extends OncePerRequestFilter {
             User user = userRepository.findByEmail(email).orElse(null);
 
             if (user != null && jwtUtil.validateToken(token, user)) {
+                if (user.getRole() != null && user.getRole().equalsIgnoreCase("BANNED")) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"message\": \"Account is locked.\"}");
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
@@ -83,27 +89,48 @@ public class JwtFilter extends OncePerRequestFilter {
                 boolean isAdmin = role.equalsIgnoreCase("ADMIN");
                 boolean isStaff = role.equalsIgnoreCase("STAFF");
 
-                // Analytics và Users chỉ dành cho ADMIN tối cao
-                if (path.startsWith("/api/admin/analytics") || path.startsWith("/api/admin/users")) {
-                    if (!isAdmin) {
-                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                        response.setContentType("application/json;charset=UTF-8");
-                        response.getWriter().write("{\"message\": \"Access denied. Only the administrator is allowed to view analytics or manage users.\"}");
-                        return;
-                    }
-                } else {
-                    // Các endpoints khác (products, variants, orders, vouchers) cho phép cả ADMIN và STAFF
-                    if (!isAdmin && !isStaff) {
-                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                        response.setContentType("application/json;charset=UTF-8");
-                        response.getWriter().write("{\"message\": \"Access denied. Only administrator or staff are allowed.\"}");
-                        return;
-                    }
+                if (!isAdmin && !isStaff) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"message\": \"Access denied. Only administrator or staff are allowed.\"}");
+                    return;
+                }
+
+                if (isStaff && !isStaffAllowed(request.getMethod(), path)) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"message\": \"Access denied. Staff can only edit products, order statuses, and inventory stock.\"}");
+                    return;
                 }
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isStaffAllowed(String method, String path) {
+        if ("GET".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        if (path.startsWith("/api/admin/products")
+                || path.startsWith("/api/admin/variants")
+                || path.startsWith("/api/admin/images")) {
+            return true;
+        }
+
+        if ("PATCH".equalsIgnoreCase(method)
+                && path.startsWith("/api/admin/orders/")
+                && (path.endsWith("/status") || path.endsWith("/payment-status"))) {
+            return true;
+        }
+
+        if ((path.equals("/api/admin/inventory/set") || path.equals("/api/admin/inventory/import"))
+                && ("PUT".equalsIgnoreCase(method) || "POST".equalsIgnoreCase(method))) {
+            return true;
+        }
+
+        return false;
     }
 
 }

@@ -26,6 +26,12 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final GoogleTokenVerifierService googleTokenVerifierService;
 
+    private void requireNotBanned(User user) {
+        if (user.getRole() != null && user.getRole().equalsIgnoreCase("BANNED")) {
+            throw new AuthException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+        }
+    }
+
     public AuthResponseDTO register(RegisterRequestDTO req) {
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new BadRequestException("Email này đã được sử dụng");
@@ -59,6 +65,8 @@ public class AuthService {
         // tìm user
         User user = userRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new AuthException("Email không tồn tại"));
+
+        requireNotBanned(user);
 
         // check password
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
@@ -117,6 +125,8 @@ public class AuthService {
 
                     return newUser;
                 });
+
+        requireNotBanned(user);
 
         String token = jwtUtil.generateToken(user);
 

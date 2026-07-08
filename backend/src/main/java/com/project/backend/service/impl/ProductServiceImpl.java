@@ -50,7 +50,7 @@ public class ProductServiceImpl implements ProductService {
      * Tạo sản phẩm mới.
      * - Kiểm tra slug chưa tồn tại.
      * - Lookup category từ DB.
-     * - Lưu Product, sau đó lưu Variant (và Image nếu có) kèm theo.
+     * - Lưu Product, sau đó lưu các Variants (và Image nếu có) kèm theo.
      */
     @Override
     @Transactional
@@ -66,10 +66,16 @@ public class ProductServiceImpl implements ProductService {
         Product product = mapper.toEntity(req, category);
         product = productRepo.save(product);
 
-        // Lưu Variant đầu tiên kèm price validation (nếu có trong request)
-        if (req.getVariant() != null) {
-            saveVariantWithImage(product, req.getVariant());
+        // Lưu tất cả Variants kèm price validation
+        if (req.getVariants() != null && !req.getVariants().isEmpty()) {
+            for (VariantUpsertRequest variantReq : req.getVariants()) {
+                saveVariantWithImage(product, variantReq);
+            }
         }
+
+        // Reload product với variants và images
+        product = productRepo.findByIdWithVariants(product.getId())
+                .orElse(product);
 
         return mapper.toDetail(product);
     }
@@ -129,6 +135,12 @@ public class ProductServiceImpl implements ProductService {
     /** Lấy danh sách toàn bộ danh mục sản phẩm. */
     @Override
     public List<Category> listCategories() {
+        return categoryRepo.findAll();
+    }
+
+    /** Lấy danh sách toàn bộ danh mục sản phẩm cho admin. */
+    @Override
+    public List<Category> listAllCategories() {
         return categoryRepo.findAll();
     }
 
@@ -220,11 +232,19 @@ public class ProductServiceImpl implements ProductService {
     public VariantResponse updateVariant(Integer variantId, VariantUpsertRequest req) {
         ProductVariant variant = findVariantById(variantId);
 
+        // Validate price not null
+        if (req.getPrice() == null) {
+            throw new BadRequestException("Giá bán không được để trống");
+        }
+        
+        // Set default basePrice if not provided
+        double basePrice = req.getBasePrice() != null ? req.getBasePrice() : req.getPrice();
+
         // Rule 2 & 3: price >= 0, basePrice >= price
-        validator.validatePrices(req.getPrice(), req.getBasePrice());
+        validator.validatePrices(req.getPrice(), basePrice);
 
         variant.setPrice(BigDecimal.valueOf(req.getPrice()));
-        variant.setBasePrice(BigDecimal.valueOf(req.getBasePrice()));
+        variant.setBasePrice(BigDecimal.valueOf(basePrice));
         variant.setSize(req.getSize());
         variant.setColor(req.getColor());
         if (req.getStock() != null) {
@@ -371,11 +391,20 @@ public class ProductServiceImpl implements ProductService {
      * Dùng chung cho createProduct() và addVariant().
      */
     private ProductVariant saveVariantWithImage(Product product, VariantUpsertRequest req) {
+        // Validate price not null
+        if (req.getPrice() == null) {
+            throw new BadRequestException("Giá bán không được để trống");
+        }
+        
+        // Set default basePrice if not provided
+        double basePrice = req.getBasePrice() != null ? req.getBasePrice() : req.getPrice();
+        
         // Rule 2 & 3: kiểm tra price trước khi persist
-        validator.validatePrices(req.getPrice(), req.getBasePrice());
+        validator.validatePrices(req.getPrice(), basePrice);
 
         ProductVariant variant = mapper.toVariant(req);
         variant.setProduct(product);
+        variant.setBasePrice(BigDecimal.valueOf(basePrice));
         variant = variantRepo.save(variant);
 
         // Lưu ảnh đính kèm nếu có (isMain tự nhiên = false trừ khi req chỉ định)

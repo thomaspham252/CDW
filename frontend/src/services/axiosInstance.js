@@ -15,12 +15,15 @@ api.interceptors.request.use((config)=>{
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const requestUrl = error.config?.url || "";
+        const isAuthRequest = requestUrl.includes("/auth/login") || requestUrl.includes("/auth/google");
+
+        if (error.response?.status === 401 && !isAuthRequest) {
             localStorage.removeItem("token");
             window.location.href = "/login";
         }
         // 403: token hết hạn hoặc không hợp lệ → xóa token, không redirect
-        if (error.response?.status === 403) {
+        if (error.response?.status === 403 && !isAuthRequest) {
             localStorage.removeItem("token");
         }
         return Promise.reject(error);

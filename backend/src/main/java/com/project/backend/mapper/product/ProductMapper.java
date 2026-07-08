@@ -85,7 +85,7 @@ public class ProductMapper {
         int totalStock = 0;
         if (product.getVariants() != null) {
             totalStock = product.getVariants().stream()
-                    .mapToInt(v -> v.getStock() != null ? v.getStock() : 50)
+                    .mapToInt(v -> v.getStock() != null ? v.getStock() : 0)
                     .sum();
         }
 
@@ -203,12 +203,15 @@ public class ProductMapper {
      * @return    Entity ProductVariant chưa có product (cần set thêm ở Service)
      */
     public ProductVariant toVariant(VariantUpsertRequest req) {
+        BigDecimal price = req.getPrice() != null ? BigDecimal.valueOf(req.getPrice()) : BigDecimal.ZERO;
+        BigDecimal basePrice = req.getBasePrice() != null ? BigDecimal.valueOf(req.getBasePrice()) : price;
+        
         return ProductVariant.builder()
-                .price(BigDecimal.valueOf(req.getPrice()))           // chuyển double → BigDecimal
-                .basePrice(BigDecimal.valueOf(req.getBasePrice()))   // giá gốc (trước khuyến mãi)
+                .price(price)
+                .basePrice(basePrice)
                 .size(req.getSize())
                 .color(req.getColor())
-                .stock(req.getStock() != null ? req.getStock() : 50)
+                .stock(req.getStock())
                 // product sẽ được set ở Service: variant.setProduct(savedProduct)
                 .build();
     }
